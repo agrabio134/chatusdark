@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="./logo.jpg" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>USDARK AI - Unstable Dark Coin Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            height: 80vh;
+            max-height: 700px;
+            background: rgba(17, 17, 17, 0.95);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1;
+        }
+
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.5s ease;
+        }
+
+        .preloader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .preloader-logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin-bottom: 30px;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 40px rgba(255,255,255,0.2);
+        }
+
+        .preloader-text {
+            font-size: 32px;
+            color: white;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .preloader-subtext {
+            font-size: 15px;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 40px;
+            font-weight: 400;
+        }
+
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            color: white;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 2px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .header-info {
+            flex: 1;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #1cc29a;
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .header-subtitle {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            font-weight: 400;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: #0a0a0a;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 14px 18px;
+            border-radius: 16px;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: rgba(28, 194, 154, 0.15);
+            color: #1cc29a;
+            border: 1px solid rgba(28, 194, 154, 0.3);
+            border-radius: 16px 16px 4px 16px;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background: rgba(30, 30, 30, 0.8);
+            color: #e5e5e5;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px 16px 16px 4px;
+            white-space: pre-line;
+        }
+
+        .input-container {
+            padding: 20px 24px;
+            background: #111111;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 14px 18px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            outline: none;
+            font-size: 15px;
+            transition: all 0.2s;
+            background: rgba(30, 30, 30, 0.8);
+            color: white;
+            font-family: inherit;
+        }
+
+        #messageInput::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+
+        #messageInput:focus {
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(30, 30, 30, 1);
+        }
+
+        #sendButton {
+            background: #1cc29a;
+            color: #0a0a0a;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(28, 194, 154, 0.3);
+        }
+
+        #sendButton:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(28, 194, 154, 0.4);
+            background: #1ed9ae;
+        }
+
+        #sendButton:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        #sendButton:disabled {
+            background: rgba(100, 100, 100, 0.3);
+            cursor: not-allowed;
+            box-shadow: none;
+            color: rgba(255,255,255,0.3);
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            padding: 40px 20px;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .typing-indicator {
+            align-self: flex-start;
+            background: rgba(30, 30, 30, 0.8);
+            padding: 14px 18px;
+            border-radius: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dots span:nth-child(1) { animation-delay: 0s; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.3;
+            }
+            30% {
+                transform: translateY(-8px);
+                opacity: 1;
+            }
+        }
+
+        .api-setup {
+            background: rgba(30, 30, 30, 0.6);
+            color: rgba(255,255,255,0.7);
+            padding: 16px 24px;
+            margin: 20px 24px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            font-size: 14px;
+        }
+
+        .api-setup strong {
+            display: block;
+            margin-bottom: 6px;
+            color: white;
+        }
+
+        .auth-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(17, 17, 17, 0.98);
+            backdrop-filter: blur(20px);
+            color: white;
+            padding: 40px;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+            display: none;
+            z-index: 9999;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 9998;
+            display: none;
+        }
+
+        #authStatus {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: white;
+        }
+
+        .auth-button {
+            background: rgba(255,255,255,0.95);
+            color: #0a0a0a;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 14px 28px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            margin: 8px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .auth-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            background: white;
+        }
+
+        .auth-button.sign-out {
+            background: #dc2626;
+            color: white;
+            border-color: #dc2626;
+        }
+
+        .auth-button.sign-out:hover {
+            background: #b91c1c;
+        }
+
+        .creator-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(28, 194, 154, 0.15);
+            color: #1cc29a;
+            border: 1px solid rgba(28, 194, 154, 0.3);
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(28, 194, 154, 0.2);
+            z-index: 100;
+        }
+
+        .creator-button:hover {
+            background: rgba(28, 194, 154, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(28, 194, 154, 0.3);
+        }
+
+        .creator-button i {
+            font-size: 16px;
+        }
+
+        .creator-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 480px;
+            max-height: 80vh;
+            background: rgba(17, 17, 17, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            z-index: 9999;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .creator-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .creator-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .creator-container::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+        }
+
+        .creator-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 9998;
+            display: none;
+        }
+
+        .creator-container h2 {
+            text-align: center;
+            margin-bottom: 28px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .creator-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .creator-form label {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: rgba(255,255,255,0.9);
+            display: block;
+        }
+
+        .creator-form input {
+            padding: 14px 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            background: rgba(30, 30, 30, 0.8);
+            color: white;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .creator-form input::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+
+        .creator-form input:focus {
+            outline: none;
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(30, 30, 30, 1);
+        }
+
+        .save-button {
+            background: #1cc29a;
+            color: #0a0a0a;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            margin-top: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(28, 194, 154, 0.3);
+        }
+
+        .save-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(28, 194, 154, 0.4);
+            background: #1ed9ae;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .close-button:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0;
+            }
+            
+            .chat-container {
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+                max-width: 100%;
+            }
+            
+            .chat-header {
+                padding: 16px 20px;
+            }
+
+            .logo {
+                width: 40px;
+                height: 40px;
+            }
+
+            .header-title {
+                font-size: 16px;
+            }
+
+            .header-subtitle {
+                font-size: 12px;
+            }
+            
+            .chat-messages {
+                padding: 16px;
+            }
+            
+            .message {
+                max-width: 85%;
+                font-size: 14px;
+                padding: 12px 16px;
+            }
+            
+            .input-container {
+                padding: 16px;
+            }
+
+            #messageInput {
+                font-size: 16px;
+                padding: 12px 16px;
+            }
+
+            #sendButton {
+                padding: 12px 20px;
+            }
+
+            .creator-button {
+                top: 16px;
+                right: 16px;
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+
+            .creator-button i {
+                font-size: 14px;
+            }
+
+            .creator-container {
+                width: 100%;
+                max-width: 100%;
+                height: 100%;
+                max-height: 100%;
+                border-radius: 0;
+                padding: 24px 20px;
+            }
+
+            .auth-container {
+                width: 90%;
+                padding: 32px 24px;
+            }
+
+            .api-setup {
+                margin: 16px;
+                padding: 14px 16px;
+                font-size: 13px;
+            }
+
+            .preloader-logo {
+                width: 80px;
+                height: 80px;
+            }
+
+            .preloader-text {
+                font-size: 24px;
+            }
+
+            .preloader-subtext {
+                font-size: 14px;
+            }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .chat-container {
+                max-width: 700px;
+                height: 85vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="preloader" id="preloader">
+        <img src="logo.jpg" alt="USDARK AI Logo" class="preloader-logo" onerror="this.style.display='none'">
+        <div class="preloader-text">USDARK AI</div>
+        <div class="preloader-subtext">Initializing Assistant...</div>
+        <div class="loader-spinner"></div>
+    </div>
+
+    <div class="auth-overlay" id="authOverlay"></div>
+    <div class="auth-container" id="authContainer">
+        <button class="close-button" id="authCloseButton">
+            <i class="fas fa-times"></i>
+        </button>
+        <div id="authStatus">Sign in to create your own AI agent</div>
+        <button class="auth-button" id="signInButton">
+            <i class="fab fa-google"></i> Sign in with Google
+        </button>
+        <button class="auth-button sign-out" id="signOutButton" style="display: none;">
+            <i class="fas fa-sign-out-alt"></i> Sign Out
+        </button>
+    </div>
+
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            <img src="logo.jpg" alt="USDARK AI Logo" class="logo" id="headerLogo" onerror="this.style.display='none'">
+            <div class="header-info">
+                <div class="header-title">
+                    <span class="status-dot"></span>
+                    <span id="headerTitle">USDARK AI</span>
+                </div>
+                <div class="header-subtitle">Powered by USDARK AI v1</div>
+            </div>
+        </div>
+
+        <div class="api-setup" id="statusMessage">
+            <strong>Initializing USDARK AI...</strong>
+            Connecting to AI systems...
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message" id="welcomeMessage">
+                Hi! I'm USDARK AI, your assistant for $USDARK, the first ever unstable dark coin. Ask me about tokenomics, contract address, trading on DEX/perp, or anything dark!
+            </div>
+        </div>
+
+        <div class="input-container">
+            <input type="text" id="messageInput" placeholder="Type your message..." maxlength="500">
+            <button id="sendButton">Send</button>
+        </div>
+    </div>
+
+    <button class="creator-button" id="creatorButton" title="Create Agent">
+        <i class="fas fa-robot"></i>
+        <span>Create Agent</span>
+    </button>
+
+    <div class="creator-overlay" id="creatorOverlay"></div>
+    <div class="creator-container" id="creatorContainer">
+        <button class="close-button" id="creatorCloseButton">
+            <i class="fas fa-times"></i>
+        </button>
+        <h2>Create Your Agent</h2>
+        <form class="creator-form" id="creatorForm">
+            <div>
+                <label for="agentName">Agent Name</label>
+                <input type="text" id="agentName" placeholder="e.g., MYTOKEN AI" required>
+            </div>
+
+            <div>
+                <label for="tokenName">Token Symbol</label>
+                <input type="text" id="tokenName" placeholder="e.g., $MYTOKEN" required>
+            </div>
+
+            <div>
+                <label for="ca">Contract Address</label>
+                <input type="text" id="ca" placeholder="Solana contract address" required>
+            </div>
+
+            <div>
+                <label for="logoUrl">Logo Image URL (optional)</label>
+                <input type="text" id="logoUrl" placeholder="https://example.com/logo.jpg">
+            </div>
+
+            <button type="button" class="save-button" id="saveButton">Create Agent</button>
+        </form>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-analytics.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDgZCOaTeL7EQTSi0nbnsmLWmC1hO5R8R4",
+            authDomain: "usdarkai.firebaseapp.com",
+            projectId: "usdarkai",
+            storageBucket: "usdarkai.firebasestorage.app",
+            messagingSenderId: "255680482917",
+            appId: "1:255680482917:web:9def2a2bb8417eb16c408c",
+            measurementId: "G-GJT4X94LC5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        class USDARKAIChatbot {
+            constructor() {
+                this.conversationHistory = [];
+                this.groqApiKey = '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';
+                this.groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
+                this.agentConfig = {
+                    agentName: 'USDARK AI',
+                    tokenName: '$USDARK',
+                    description: 'unstable dark coin, u buy it before u go to sleep and don\'t know if\'ll be millionaire or hobo by the time u wake up. high Volatility!!! made for unstable people. Get dark or die trying.',
+                    ca: '4EKDKWJDrqrCQtAD6j9sM5diTeZiKBepkEB8GLP9Dark',
+                    totalSupply: '1,000,000,000',
+                    dexUrl: 'https://dex.usdark.app/',
+                    perpUrl: 'https://usdark.trade/',
+                    websiteUrl: 'https://usdark.app/',
+                    xCommunityUrl: 'https://x.com/i/communities/1973064199522627940',
+                    xAccountUrl: 'https://x.com/usdark_dex',
+                    dexscreenerUrl: 'https://dexscreener.com/solana/4EKDKWJDrqrCQtAD6j9sM5diTeZiKBepkEB8GLP9Dark',
+                    logoUrl: './logo.jpg',
+                    systemPrompt: 'You are USDARK AI, a helpful AI assistant for USDARK, the first ever unstable dark coin. USDARK ($USDARK) is a high-volatility meme token on Solana with 1,000,000,000 total supply. Contract Address: 4EKDKWJDrqrCQtAD6j9sM5diTeZiKBepkEB8GLP9Dark. Be conversational, helpful, and enthusiastic!',
+                    welcomeMessage: 'Hi! I\'m USDARK AI, your assistant for $USDARK, the first ever unstable dark coin. Ask me about tokenomics, contract address, trading on DEX/perp, or anything dark!'
+                };
+                this.setupAuth();
+                this.setupEventListeners();
+                this.testConnection();
+            }
+
+            setupAuth() {
+                onAuthStateChanged(auth, (user) => {
+                    const signInButton = document.getElementById('signInButton');
+                    const signOutButton = document.getElementById('signOutButton');
+                    const authStatus = document.getElementById('authStatus');
+
+                    if (user) {
+                        authStatus.textContent = `Welcome, ${user.displayName}!`;
+                        signInButton.style.display = 'none';
+                        signOutButton.style.display = 'inline-flex';
+                        this.loadAgentConfig(user.uid);
+                    } else {
+                        authStatus.textContent = 'Sign in to create your own AI agent';
+                        signInButton.style.display = 'inline-flex';
+                        signOutButton.style.display = 'none';
+                        this.resetToDefault();
+                    }
+                });
+
+                document.getElementById('signInButton').addEventListener('click', () => {
+                    const provider = new GoogleAuthProvider();
+                    signInWithPopup(auth, provider).catch((error) => {
+                        console.error('Sign-in error:', error);
+                        this.updateStatus('Sign-In Error', 'Failed to sign in with Google.', false);
+                    });
+                });
+
+                document.getElementById('signOutButton').addEventListener('click', () => {
+                    signOut(auth).then(() => {
+                        this.closeAuthModal();
+                    }).catch((error) => {
+                        console.error('Sign-out error:', error);
+                    });
+                });
+
+                document.getElementById('authCloseButton').addEventListener('click', () => {
+                    this.closeAuthModal();
+                });
+
+                document.getElementById('authOverlay').addEventListener('click', () => {
+                    this.closeAuthModal();
+                });
+            }
+
+            closeAuthModal() {
+                document.getElementById('authContainer').style.display = 'none';
+                document.getElementById('authOverlay').style.display = 'none';
+            }
+
+            openAuthModal() {
+                document.getElementById('authContainer').style.display = 'block';
+                document.getElementById('authOverlay').style.display = 'block';
+            }
+
+            closeCreatorModal() {
+                document.getElementById('creatorContainer').style.display = 'none';
+                document.getElementById('creatorOverlay').style.display = 'none';
+            }
+
+            openCreatorModal() {
+                document.getElementById('creatorContainer').style.display = 'block';
+                document.getElementById('creatorOverlay').style.display = 'block';
+                this.populateCreatorForm();
+            }
+
+            async loadAgentConfig(userId) {
+                try {
+                    const docRef = doc(db, 'agents', userId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        this.agentConfig = docSnap.data();
+                        this.updateUI();
+                    } else {
+                        this.updateUI();
+                    }
+                } catch (error) {
+                    console.error('Error loading agent config:', error);
+                    this.updateStatus('Error', 'Failed to load agent configuration.', false);
+                }
+            }
+
+            updateUI() {
+                const { agentName, logoUrl, welcomeMessage } = this.agentConfig;
+                document.getElementById('headerTitle').textContent = agentName;
+                document.getElementById('headerLogo').src = logoUrl;
+                document.getElementById('welcomeMessage').textContent = welcomeMessage;
+                document.title = `${agentName} - AI Assistant`;
+            }
+
+            resetToDefault() {
+                this.updateUI();
+            }
+
+            async testConnection() {
+                try {
+                    const response = await fetch(this.groqUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${this.groqApiKey}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            model: 'llama-3.1-8b-instant',
+                            messages: [{role: 'user', content: 'Hi'}],
+                            max_tokens: 10
+                        })
+                    });
+
+                    if (response.ok) {
+                        this.updateStatus(`${this.agentConfig.agentName} Connected`, 'Ready to chat!', true);
+                        this.aiWorking = true;
+                        this.hidePreloader();
+                    } else {
+                        this.updateStatus('Connected', 'Using fallback mode.', false);
+                        this.aiWorking = false;
+                        this.hidePreloader();
+                    }
+                } catch (error) {
+                    this.updateStatus('Connected', 'Using fallback mode.', false);
+                    this.aiWorking = false;
+                    this.hidePreloader();
+                }
+            }
+
+            hidePreloader() {
+                setTimeout(() => {
+                    const preloader = document.getElementById('preloader');
+                    if (preloader) {
+                        preloader.classList.add('hidden');
+                        setTimeout(() => {
+                            preloader.style.display = 'none';
+                        }, 500);
+                    }
+                }, 500);
+            }
+
+            updateStatus(title, message, success) {
+                const statusEl = document.getElementById('statusMessage');
+                if (statusEl) {
+                    statusEl.innerHTML = `<strong>${success ? '✓' : '•'} ${title}</strong>${message}`;
+                    statusEl.style.background = success ? 'rgba(16, 185, 129, 0.1)' : 'rgba(30, 30, 30, 0.6)';
+                    statusEl.style.borderColor = success ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.06)';
+                }
+            }
+
+            setupEventListeners() {
+                const messageInput = document.getElementById('messageInput');
+                const sendButton = document.getElementById('sendButton');
+                const creatorButton = document.getElementById('creatorButton');
+
+                sendButton.addEventListener('click', () => this.sendMessage());
+                messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+
+                creatorButton.addEventListener('click', () => {
+                    if (auth.currentUser) {
+                        this.openCreatorModal();
+                    } else {
+                        this.openAuthModal();
+                    }
+                });
+
+                document.getElementById('creatorCloseButton').addEventListener('click', () => {
+                    this.closeCreatorModal();
+                });
+
+                document.getElementById('creatorOverlay').addEventListener('click', () => {
+                    this.closeCreatorModal();
+                });
+
+                document.getElementById('saveButton').addEventListener('click', () => this.saveAgentConfig());
+            }
+
+            populateCreatorForm() {
+                const { agentName, tokenName, ca, logoUrl } = this.agentConfig;
+                document.getElementById('agentName').value = agentName;
+                document.getElementById('tokenName').value = tokenName;
+                document.getElementById('ca').value = ca;
+                document.getElementById('logoUrl').value = logoUrl;
+            }
+
+            async saveAgentConfig() {
+                const user = auth.currentUser;
+                if (!user) {
+                    this.updateStatus('Error', 'You must be signed in to save an agent.', false);
+                    return;
+                }
+
+                const agentName = document.getElementById('agentName').value.trim();
+                const tokenName = document.getElementById('tokenName').value.trim();
+                const ca = document.getElementById('ca').value.trim();
+                const logoUrl = document.getElementById('logoUrl').value.trim() || './logo.jpg';
+
+                if (!agentName || !tokenName || !ca) {
+                    this.updateStatus('Error', 'Please fill in all required fields.', false);
+                    return;
+                }
+
+                const newConfig = {
+                    agentName,
+                    tokenName,
+                    description: `${tokenName} token on Solana`,
+                    ca,
+                    totalSupply: '1,000,000,000',
+                    dexUrl: '#',
+                    perpUrl: '#',
+                    websiteUrl: '#',
+                    xCommunityUrl: '#',
+                    xAccountUrl: '#',
+                    dexscreenerUrl: `https://dexscreener.com/solana/${ca}`,
+                    logoUrl,
+                    systemPrompt: `You are ${agentName}, a helpful AI assistant for ${tokenName}, a token on Solana. Contract Address: ${ca}. Be conversational, helpful, enthusiastic, and use emojis when appropriate!`,
+                    welcomeMessage: `Hi! I'm ${agentName}, your assistant for ${tokenName}. Ask me about the contract address, trading, or anything else!`
+                };
+
+                try {
+                    await setDoc(doc(db, 'agents', user.uid), newConfig);
+                    this.agentConfig = newConfig;
+                    this.updateUI();
+                    this.updateStatus('Success', 'Agent created successfully!', true);
+                    this.closeCreatorModal();
+                    this.conversationHistory = [];
+                    document.getElementById('chatMessages').innerHTML = `
+                        <div class="welcome-message" id="welcomeMessage">${newConfig.welcomeMessage}</div>
+                    `;
+                } catch (error) {
+                    console.error('Error saving agent config:', error);
+                    this.updateStatus('Error', 'Failed to save agent configuration.', false);
+                }
+            }
+
+            formatMarkdown(text) {
+                return text
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/__(.+?)__/g, '<strong>$1</strong>')
+                    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
+                    .replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, '<em>$1</em>')
+                    .replace(/^[•\-\*]\s+(.+)$/gm, '<li>$1</li>')
+                    .replace(/\n/g, '<br>');
+            }
+
+            async sendMessage() {
+                const messageInput = document.getElementById('messageInput');
+                const message = messageInput.value.trim();
+                
+                if (!message) return;
+
+                this.displayMessage(message, 'user');
+                messageInput.value = '';
+                
+                this.showTypingIndicator();
+                this.setInputState(false);
+
+                try {
+                    const response = await this.getAIResponse(message);
+                    this.hideTypingIndicator();
+                    await this.displayMessage(response, 'bot');
+                } catch (error) {
+                    this.hideTypingIndicator();
+                    await this.displayMessage('Sorry, I encountered an error. Please try again.', 'bot');
+                    console.error('AI Error:', error);
+                } finally {
+                    this.setInputState(true);
+                }
+            }
+
+            async getAIResponse(message) {
+                this.conversationHistory.push({
+                    role: 'user',
+                    content: message
+                });
+
+                if (this.conversationHistory.length > 6) {
+                    this.conversationHistory = this.conversationHistory.slice(-6);
+                }
+
+                if (this.aiWorking) {
+                    try {
+                        const messages = [
+                            {
+                                role: 'system',
+                                content: this.agentConfig.systemPrompt
+                            },
+                            ...this.conversationHistory
+                        ];
+
+                        const response = await fetch(this.groqUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${this.groqApiKey}`,
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                model: 'llama-3.1-8b-instant',
+                                messages: messages,
+                                max_tokens: 500,
+                                temperature: 0.8
+                            })
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            const aiMessage = data.choices[0].message.content;
+                            this.conversationHistory.push({
+                                role: 'assistant',
+                                content: aiMessage
+                            });
+                            return aiMessage;
+                        }
+                    } catch (error) {
+                        console.error('AI error:', error);
+                    }
+                }
+
+                return this.getIntelligentFallback(message);
+            }
+
+            getIntelligentFallback(message) {
+                const { agentName, tokenName, ca, totalSupply, description, dexUrl, dexscreenerUrl } = this.agentConfig;
+                const msg = message.toLowerCase().trim();
+                
+                if (msg.includes('hi') || msg.includes('hello') || msg.includes('hey')) {
+                    return `Hey! I'm ${agentName}. How can I help you with ${tokenName} today?`;
+                }
+                
+                if (msg.includes('ca') || msg.includes('contract') || msg.includes('address')) {
+                    return `${tokenName} Contract Address:\n${ca}\n\nTrade on Solana!`;
+                }
+                
+                if (msg.includes('tokenomics') || msg.includes('supply')) {
+                    return `${tokenName} Tokenomics:\n• Total Supply: ${totalSupply}\n• ${description}`;
+                }
+                
+                if (msg.includes('buy') || msg.includes('get') || msg.includes('purchase') || msg.includes('swap')) {
+                    return `To get ${tokenName}:\n1. Connect your Solana wallet\n2. Swap on a DEX\n3. Confirm the transaction!`;
+                }
+                
+                if (msg.includes('price') || msg.includes('chart')) {
+                    return `Check the live price on DEXScreener: ${dexscreenerUrl}`;
+                }
+                
+                return `I can help you with ${tokenName} questions. Ask me about the contract address, tokenomics, or trading!`;
+            }
+
+            async displayMessage(message, type) {
+                const chatMessages = document.getElementById('chatMessages');
+                const welcomeMsg = document.getElementById('welcomeMessage');
+                if (welcomeMsg && type === 'user') {
+                    welcomeMsg.remove();
+                }
+
+                const messageElement = document.createElement('div');
+                messageElement.className = `message ${type}-message`;
+                
+                chatMessages.appendChild(messageElement);
+                
+                if (type === 'bot') {
+                    await this.typeMessage(messageElement, message);
+                } else {
+                    messageElement.textContent = message;
+                }
+                
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            async typeMessage(element, message) {
+                const formattedMessage = this.formatMarkdown(message);
+                const words = formattedMessage.split(' ');
+                
+                for (let i = 0; i < words.length; i++) {
+                    element.innerHTML += (i > 0 ? ' ' : '') + words[i];
+                    const chatMessages = document.getElementById('chatMessages');
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    await this.sleep(30);
+                }
+            }
+
+            sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            showTypingIndicator() {
+                const chatMessages = document.getElementById('chatMessages');
+                const typingIndicator = document.createElement('div');
+                typingIndicator.className = 'typing-indicator';
+                typingIndicator.id = 'typingIndicator';
+                typingIndicator.innerHTML = `
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                `;
+                
+                chatMessages.appendChild(typingIndicator);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            hideTypingIndicator() {
+                const typingIndicator = document.getElementById('typingIndicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+            }
+
+            setInputState(enabled) {
+                const messageInput = document.getElementById('messageInput');
+                const sendButton = document.getElementById('sendButton');
+                
+                messageInput.disabled = !enabled;
+                sendButton.disabled = !enabled;
+                
+                if (enabled) {
+                    messageInput.focus();
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new USDARKAIChatbot();
+        });
+    </script>
+</body>
+</html>
