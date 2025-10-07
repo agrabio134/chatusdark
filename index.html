@@ -861,6 +861,32 @@
             text-align: center;
         }
 
+        .wallet-button {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .wallet-button:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-1px);
+        }
+
+        .wallet-logo {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 0;
@@ -1286,10 +1312,10 @@
                 
                 // Initialize libraries
                 this.connection = null;
-                this.recipientPubkey = null;
+                this.recipientPubkey = new solanaWeb3.PublicKey('B3i23hzLa7V6TJwgG98XYNaruk6XJ3EV7ENFkj2GXnH1');
                 this.paymentAmountUSD = 75; // Fixed USD price
-                this.qrCodeAvailable = false;
-                this.bigNumberAvailable = false;
+                this.connectedWallet = null;
+                this.walletPublicKey = null;
                 
                 this.setupAuth();
                 this.loadConfigFromPath();
@@ -1298,24 +1324,6 @@
             }
 
             async initializeLibraries() {
-                // Check for QRCode library
-                if (typeof QRCode !== 'undefined') {
-                    this.qrCodeAvailable = true;
-                    console.log('QRCode library loaded successfully');
-                } else {
-                    console.warn('QRCode library not available');
-                    this.qrCodeAvailable = false;
-                }
-
-                // Check for BigNumber library
-                if (typeof BigNumber !== 'undefined') {
-                    this.bigNumberAvailable = true;
-                    console.log('BigNumber library loaded successfully');
-                } else {
-                    console.warn('BigNumber library not available');
-                    this.bigNumberAvailable = false;
-                }
-
                 // Initialize Solana connection with a more reliable endpoint
                 try {
                     if (typeof solanaWeb3 !== 'undefined') {
@@ -1349,7 +1357,6 @@
                         }
                         
                         if (this.connection) {
-                            this.recipientPubkey = new solanaWeb3.PublicKey('B3i23hzLa7V6TJwgG98XYNaruk6XJ3EV7ENFkj2GXnH1');
                             console.log('Solana Web3 initialized successfully');
                         } else {
                             console.error('Failed to connect to any Solana RPC endpoint');
@@ -1370,6 +1377,117 @@
                 }
                 
                 this.testConnection();
+            }
+
+            async showWalletConnectionModal() {
+                return new Promise(async (resolve) => {
+                    const walletLogos = {
+                        phantom: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Phantom_wallet_logo.svg/512px-Phantom_wallet_logo.svg.png',
+                        solflare: 'https://solflare.com/assets/logo-128.png',
+                        backpack: 'https://backpack.app/assets/backpack-logo.png'
+                    };
+
+                    const wallets = [
+                        {
+                            name: 'Phantom',
+                            id: 'phantom',
+                            check: () => window.solana && window.solana.isPhantom,
+                            connect: async () => {
+                                if (window.solana && window.solana.connect) {
+                                    const resp = await window.solana.connect();
+                                    return resp.publicKey.toString();
+                                }
+                            },
+                            logo: walletLogos.phantom
+                        },
+                        {
+                            name: 'Solflare',
+                            id: 'solflare',
+                            check: () => window.solflare && window.solflare.isSolflare,
+                            connect: async () => {
+                                if (window.solflare && window.solflare.connect) {
+                                    const resp = await window.solflare.connect();
+                                    return resp.publicKey.toString();
+                                }
+                            },
+                            logo: walletLogos.solflare
+                        },
+                        {
+                            name: 'Backpack',
+                            id: 'backpack',
+                            check: () => window.backpack && window.backpack.isBackpack,
+                            connect: async () => {
+                                if (window.backpack && window.backpack.connect) {
+                                    const resp = await window.backpack.connect();
+                                    return resp.publicKey.toString();
+                                }
+                            },
+                            logo: walletLogos.backpack
+                        }
+                    ];
+
+                    const availableWallets = wallets.filter(wallet => wallet.check());
+                    if (availableWallets.length === 0) {
+                        modal.show({
+                            title: 'No Wallets Detected',
+                            text: 'Please install a Solana wallet like Phantom, Solflare, or Backpack.',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                        resolve(false);
+                        return;
+                    }
+
+                    let walletButtonsHtml = '';
+                    availableWallets.forEach(wallet => {
+                        walletButtonsHtml += `
+                            <button class="wallet-button modal-button primary" data-wallet="${wallet.id}" style="width: 100%; margin-bottom: 12px; justify-content: flex-start;">
+                                <img src="${wallet.logo}" alt="${wallet.name} logo" class="wallet-logo" onerror="this.style.display='none'">
+                                <span>Connect ${wallet.name}</span>
+                            </button>
+                        `;
+                    });
+
+                    const result = await modal.show({
+                        title: 'Connect Wallet',
+                        text: 'Select a Solana wallet to connect for payment.',
+                        icon: 'info',
+                        html: `<div style="display: flex; flex-direction: column; gap: 8px;">${walletButtonsHtml}</div>`,
+                        showCancelButton: true,
+                        cancelButtonText: 'Cancel',
+                        noConfirmButton: true,
+                        didOpen: () => {
+                            availableWallets.forEach(wallet => {
+                                const btn = document.querySelector(`[data-wallet="${wallet.id}"]`);
+                                if (btn) {
+                                    btn.addEventListener('click', async (e) => {
+                                        e.preventDefault();
+                                        try {
+                                            modal.showLoading('Connecting...', `Connecting to ${wallet.name}...`);
+                                            const pubkey = await wallet.connect();
+                                            this.connectedWallet = wallet.id;
+                                            this.walletPublicKey = pubkey;
+                                            modal.hideModal();
+                                            resolve(true);
+                                        } catch (err) {
+                                            console.error(err);
+                                            modal.show({
+                                                title: 'Connection Failed',
+                                                text: `Failed to connect to ${wallet.name}: ${err.message}`,
+                                                icon: 'error',
+                                                confirmButtonText: 'OK'
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+
+                    if (result && result.cancelled) {
+                        resolve(false);
+                    }
+                });
             }
 
             setupAuth() {
@@ -1489,6 +1607,7 @@
                 console.log('Opening creator modal');
                 document.getElementById('creatorContainer').style.display = 'block';
                 document.getElementById('creatorOverlay').style.display = 'block';
+                this.fetchSolPrice();
             }
 
             updateUI() {
@@ -1577,7 +1696,6 @@
                 creatorButton.addEventListener('click', async () => {
                     console.log('Create Agent button clicked');
                     if (auth.currentUser) {
-                        await this.fetchSolPrice(); // Update display
                         this.openCreatorModal();
                     } else {
                         this.openAuthModal();
@@ -1675,10 +1793,10 @@
             }
 
             async processPayment() {
-                if (!this.connection) {
+                if (!this.connection || !this.walletPublicKey) {
                     modal.show({
                         title: 'Connection Error',
-                        text: 'Unable to connect to Solana network. Please check your internet connection and try again.',
+                        text: 'Unable to connect to Solana network or wallet not connected. Please check your internet connection and connect your wallet.',
                         icon: 'error',
                         confirmButtonText: 'OK'
                     });
@@ -1686,7 +1804,7 @@
                 }
 
                 try {
-                    const { solPrice, solAmount } = await this.fetchSolPrice();
+                    const { solAmount } = await this.fetchSolPrice();
                     
                     // Show payment confirmation dialog
                     const confirmResult = await modal.show({
@@ -1702,43 +1820,57 @@
                         return false;
                     }
 
-                    // Generate reference key for payment tracking
-                    const reference = solanaWeb3.Keypair.generate().publicKey;
-                    
-                    // Create payment URL 
-                    const paymentUrl = this.createTransfer(this.recipientPubkey, solAmount, reference);
-                    console.log('Payment URL:', paymentUrl);
+                    const lamports = Math.floor(solAmount * solanaWeb3.LAMPORTS_PER_SOL);
+                    const fromPubkey = new solanaWeb3.PublicKey(this.walletPublicKey);
 
-                    // Show QR code or open wallet
-                    modal.showLoading('Waiting for Payment...', 'Please complete the payment in your Solana wallet');
+                    // Create transaction
+                    const transaction = new solanaWeb3.Transaction().add(
+                        solanaWeb3.SystemProgram.transfer({
+                            fromPubkey,
+                            toPubkey: this.recipientPubkey,
+                            lamports,
+                        })
+                    );
 
-                    // Try to open wallet
-                    try {
-                        window.open(paymentUrl, '_blank');
-                    } catch (error) {
-                        console.log('Could not auto-open wallet:', error);
-                    }
+                    // Get recent blockhash
+                    const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash('confirmed');
+                    transaction.recentBlockhash = blockhash;
+                    transaction.feePayer = fromPubkey;
 
-                    // Poll for payment confirmation
-                    const paymentReceived = await this.pollForPayment(reference, 300000); // 5 minute timeout
-
-                    if (paymentReceived) {
-                        modal.show({
-                            title: 'Payment Successful!',
-                            text: 'Your payment has been confirmed. Creating your agent now...',
-                            icon: 'success',
-                            confirmButtonText: 'Continue'
-                        });
-                        return true;
+                    // Sign transaction based on wallet
+                    let signedTx;
+                    if (this.connectedWallet === 'phantom') {
+                        signedTx = await window.solana.signTransaction(transaction);
+                    } else if (this.connectedWallet === 'solflare') {
+                        signedTx = await window.solflare.signTransaction(transaction);
+                    } else if (this.connectedWallet === 'backpack') {
+                        signedTx = await window.backpack.signTransaction(transaction);
                     } else {
-                        modal.show({
-                            title: 'Payment Timeout',
-                            text: 'Payment was not detected within the time limit. Please try again.',
-                            icon: 'error',
-                            confirmButtonText: 'OK'
-                        });
-                        return false;
+                        throw new Error('Unsupported wallet');
                     }
+
+                    // Send transaction
+                    const signature = await this.connection.sendRawTransaction(signedTx.serialize());
+
+                    // Confirm transaction
+                    modal.showLoading('Confirming Payment...', 'Waiting for transaction confirmation...');
+                    await this.connection.confirmTransaction({
+                        signature,
+                        blockhash,
+                        lastValidBlockHeight
+                    }, 'confirmed');
+
+                    if (this.connection.getParsedTransaction(signature)?.meta?.err) {
+                        throw new Error('Transaction failed on chain');
+                    }
+
+                    modal.show({
+                        title: 'Payment Successful!',
+                        text: 'Your payment has been confirmed. Creating your agent now...',
+                        icon: 'success',
+                        confirmButtonText: 'Continue'
+                    });
+                    return true;
                 } catch (error) {
                     console.error('Payment processing error:', error);
                     modal.show({
@@ -1749,71 +1881,6 @@
                     });
                     return false;
                 }
-            }
-
-            createTransfer(recipient, amount, reference) {
-                const label = encodeURIComponent('USDARK AI Agent Creation');
-                const message = encodeURIComponent(`Payment of ${amount} SOL for agent creation fee ($${this.paymentAmountUSD} USD)`);
-                return `solana:${recipient}?amount=${amount}&reference=${reference}&label=${label}&message=${message}`;
-            }
-
-            async pollForPayment(reference, timeout = 300000) {
-                const startTime = Date.now();
-                let attempt = 1;
-                
-                while (Date.now() - startTime < timeout) {
-                    try {
-                        console.log(`Polling attempt ${attempt}`);
-                        
-                        if (!this.connection) {
-                            throw new Error('No connection available');
-                        }
-
-                        const signatures = await this.connection.getSignaturesForAddress(reference, { limit: 1 });
-                        
-                        if (signatures.length > 0) {
-                            console.log('Payment transaction found:', signatures[0]);
-                            return true;
-                        }
-                        
-                        attempt++;
-                        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
-                    } catch (error) {
-                        console.log(`Polling attempt ${attempt} error:`, error.message);
-                        
-                        // If RPC fails, try fallback connection
-                        if (error.message.includes('403') || error.message.includes('Forbidden')) {
-                            await this.tryFallbackConnection();
-                        }
-                        
-                        attempt++;
-                        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait longer on error
-                    }
-                }
-                
-                return false; // Timeout
-            }
-
-            async tryFallbackConnection() {
-                const fallbackEndpoints = [
-                    'https://solana-api.projectserum.com',
-                    'https://api.devnet.solana.com' // Use devnet as last resort for testing
-                ];
-                
-                for (const endpoint of fallbackEndpoints) {
-                    try {
-                        console.log(`Trying fallback endpoint: ${endpoint}`);
-                        const testConnection = new solanaWeb3.Connection(endpoint);
-                        await testConnection.getVersion();
-                        this.connection = testConnection;
-                        console.log(`Successfully switched to fallback: ${endpoint}`);
-                        return true;
-                    } catch (error) {
-                        console.log(`Fallback ${endpoint} failed:`, error.message);
-                    }
-                }
-                
-                return false;
             }
 
             async saveAgentConfig() {
@@ -1830,6 +1897,15 @@
                         confirmButtonText: 'OK'
                     });
                     return;
+                }
+
+                // Check wallet connection
+                if (!this.walletPublicKey) {
+                    const connected = await this.showWalletConnectionModal();
+                    if (!connected) {
+                        console.log('Wallet connection cancelled');
+                        return;
+                    }
                 }
 
                 // Get form values
