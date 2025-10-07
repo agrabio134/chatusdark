@@ -1105,7 +1105,7 @@
                 <input type="file" id="logoFile" accept="image/*">
                 <input type="text" id="logoUrl" placeholder="Or paste image URL">
                 <img id="logoPreview" class="logo-preview" alt="Preview">
-                <p style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px;">Uploads use your Cloudinary account (dhwheswgi). Ensure preset 'ml_default' is set to Unsigned in dashboard for browser uploads.</p>
+                <!-- <p style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px;">Uploads use your Cloudinary account (dhwheswgi). Ensure preset 'ml_default' is set to Unsigned in dashboard for browser uploads.</p> -->
             </div>
 
             <div class="advanced-toggle">
@@ -1151,6 +1151,8 @@
     </div>
 
     <script type="module">
+        let simulatepayment = 0;
+
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-analytics.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
@@ -1899,8 +1901,8 @@
                     return;
                 }
 
-                // Check wallet connection
-                if (!this.walletPublicKey) {
+                // Check wallet connection only if not simulating
+                if (simulatepayment === 0 && !this.walletPublicKey) {
                     const connected = await this.showWalletConnectionModal();
                     if (!connected) {
                         console.log('Wallet connection cancelled');
@@ -1958,8 +1960,21 @@
 
                 console.log('All validations passed, proceeding with payment...');
 
-                // Process payment first
-                const paymentSuccess = await this.processPayment();
+                let paymentSuccess = false;
+                if (simulatepayment === 1) {
+                    console.log('Simulating payment success');
+                    await modal.show({
+                        title: 'Payment Simulated',
+                        text: 'Payment successful (simulated). Creating your agent now...',
+                        icon: 'success',
+                        confirmButtonText: 'Continue'
+                    });
+                    paymentSuccess = true;
+                } else {
+                    // Process payment first
+                    paymentSuccess = await this.processPayment();
+                }
+
                 if (!paymentSuccess) {
                     console.log('Payment failed or cancelled');
                     return;
