@@ -1284,12 +1284,12 @@
                 document.getElementById('preloaderLogo').src = this.defaultLogo;
                 document.getElementById('headerLogo').src = this.defaultLogo;
                 
-                // FIX: Switched to a reliable free public RPC: Allnodes public node (avoids 403 on mainnet-beta)
-                this.connection = new solanaWeb3.Connection('https://solana-rpc.publicnode.com');
-                this.recipientPubkey = new solanaWeb3.PublicKey('B3i23hzLa7V6TJwgG98XYNaruk6XJ3EV7ENFkj2GXnH1');
+                // Initialize libraries
+                this.connection = null;
+                this.recipientPubkey = null;
                 this.paymentAmountUSD = 75; // Fixed USD price
-                this.solanaPay = null;
-                this.bigNumber = null;
+                this.qrCodeAvailable = false;
+                this.bigNumberAvailable = false;
                 
                 this.setupAuth();
                 this.loadConfigFromPath();
@@ -1298,67 +1298,78 @@
             }
 
             async initializeLibraries() {
-                // FIX: Ensure QRCode is global (library loads but may not expose directly)
+                // Check for QRCode library
                 if (typeof QRCode !== 'undefined') {
-                    window.QRCode = QRCode; // Make it reliably global
-                    console.log('QRCode loaded successfully');
+                    this.qrCodeAvailable = true;
+                    console.log('QRCode library loaded successfully');
                 } else {
-                    console.warn('QRCode library failed to load—disabling QR generation');
+                    console.warn('QRCode library not available');
+                    this.qrCodeAvailable = false;
                 }
 
-                // Initialize BigNumber
-                if (window.BigNumber) {
-                    this.bigNumber = window.BigNumber;
-                    console.log('BigNumber loaded successfully');
+                // Check for BigNumber library
+                if (typeof BigNumber !== 'undefined') {
+                    this.bigNumberAvailable = true;
+                    console.log('BigNumber library loaded successfully');
                 } else {
-                    console.warn('BigNumber not available');
+                    console.warn('BigNumber library not available');
+                    this.bigNumberAvailable = false;
                 }
 
-                // Initialize Solana Pay manually since the CDN version has issues
-                this.solanaPay = this.createSolanaPayImplementation();
+                // Initialize Solana connection with a more reliable endpoint
+                try {
+                    if (typeof solanaWeb3 !== 'undefined') {
+                        // Try multiple RPC endpoints for better reliability
+                        const endpoints = [
+                            'https://api.mainnet-beta.solana.com',
+                            'https://solana-api.projectserum.com',
+                            'https://rpc.ankr.com/solana',
+                            'https://solana.public-rpc.com',
+                            'https://api.devnet.solana.com' // Fallback to devnet for testing
+                        ];
+                        
+                        for (const endpoint of endpoints) {
+                            try {
+                                this.connection = new solanaWeb3.Connection(endpoint);
+                                
+                                // Test connection with timeout
+                                const testPromise = this.connection.getVersion();
+                                const timeoutPromise = new Promise((_, reject) => 
+                                    setTimeout(() => reject(new Error('Connection timeout')), 10000)
+                                );
+                                
+                                await Promise.race([testPromise, timeoutPromise]);
+                                console.log(`Connected to Solana RPC: ${endpoint}`);
+                                this.workingEndpoint = endpoint;
+                                break;
+                            } catch (err) {
+                                console.warn(`Failed to connect to ${endpoint}:`, err.message);
+                                this.connection = null;
+                            }
+                        }
+                        
+                        if (this.connection) {
+                            this.recipientPubkey = new solanaWeb3.PublicKey('B3i23hzLa7V6TJwgG98XYNaruk6XJ3EV7ENFkj2GXnH1');
+                            console.log('Solana Web3 initialized successfully');
+                        } else {
+                            console.error('Failed to connect to any Solana RPC endpoint');
+                            console.warn('Payment functionality will be limited');
+                            // Show a warning to the user
+                            setTimeout(() => {
+                                modal.show({
+                                    title: 'Network Connection Warning',
+                                    text: 'Unable to connect to Solana network. Payment functionality may be limited. Please check your internet connection.',
+                                    icon: 'warning',
+                                    confirmButtonText: 'OK'
+                                });
+                            }, 2000);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error initializing Solana connection:', error);
+                }
                 
                 this.testConnection();
-            }
-
-            // Create a minimal Solana Pay implementation for transfer URLs
-            createSolanaPayImplementation() {
-                return {
-                    createTransfer: (params) => {
-                        const { recipient, amount, reference, label, message } = params;
-                        const url = new URL('solana:');
-                        
-                        // Add recipient
-                        url.pathname = recipient.toString();
-                        
-                        // Add parameters
-                        if (amount) {
-                            url.searchParams.set('amount', amount.toString());
-                        }
-                        if (reference) {
-                            url.searchParams.set('reference', reference.toString());
-                        }
-                        if (label) {
-                            url.searchParams.set('label', encodeURIComponent(label));
-                        }
-                        if (message) {
-                            url.searchParams.set('message', encodeURIComponent(message));
-                        }
-                        
-                        return url;
-                    },
-                    
-                    findReference: async (connection, reference) => {
-                        // Search for transactions with the reference
-                        const signatures = await connection.getSignaturesForAddress(reference, { limit: 10 });
-                        
-                        if (signatures.length === 0) {
-                            throw new Error('Reference not found');
-                        }
-                        
-                        // Return the most recent signature
-                        return signatures[0].signature;
-                    }
-                };
             }
 
             setupAuth() {
@@ -1629,304 +1640,10 @@
                     return { solPrice, solAmount };
                 } catch (error) {
                     console.error('Error fetching SOL price:', error);
-                    modal.show({
-                        title: 'Price Fetch Error',
-                        text: 'Could not load SOL price. Using fallback: 0.5 SOL.',
-                        icon: 'warning',
-                        confirmButtonText: 'OK'
-                    });
                     const solAmount = 0.5;
+                    document.getElementById('solAmountDisplay').textContent = `${solAmount} SOL`;
                     return { solPrice: 150, solAmount }; // Fallback
                 }
-            }
-
-            // FIX: Enhanced verifyTransaction with better error handling
-            async verifyTransaction(signature, requiredAmount, recipient) {
-                try {
-                    if (!this.bigNumber) {
-                        throw new Error('BigNumber library not available');
-                    }
-                    
-                    const tx = await this.connection.getTransaction(signature, {
-                        commitment: 'confirmed',
-                        maxSupportedTransactionVersion: 0
-                    });
-                    
-                    if (!tx) {
-                        throw new Error('Transaction not found');
-                    }
-                    
-                    // Check if it's a transfer to recipient with sufficient amount
-                    const requiredLamports = new this.bigNumber(requiredAmount).multipliedBy(solanaWeb3.LAMPORTS_PER_SOL).toNumber();
-                    
-                    // Check post balances
-                    const recipientIndex = tx.transaction.message.accountKeys.findIndex(key => 
-                        key.equals ? key.equals(recipient) : key.toString() === recipient.toString()
-                    );
-                    
-                    if (recipientIndex >= 0) {
-                        const preBalance = tx.meta.preBalances[recipientIndex] || 0;
-                        const postBalance = tx.meta.postBalances[recipientIndex] || 0;
-                        const transferAmount = postBalance - preBalance;
-                        
-                        if (transferAmount >= requiredLamports) {
-                            return true;
-                        }
-                    }
-                    
-                    return false;
-                } catch (error) {
-                    // FIX: Distinguish RPC errors (e.g., 403) from others
-                    if (error.message.includes('403') || error.message.includes('rate limit')) {
-                        throw new Error('RPC rate limit—try manual verification');
-                    }
-                    console.error('Transaction verification error:', error);
-                    throw error;
-                }
-            }
-
-            // FIX: Enhanced openInWallet with try-catch for scheme errors
-            openInWallet(url) {
-                try {
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.style.display = 'none';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    console.log('Solana URL opened successfully');
-                } catch (error) {
-                    console.warn('Failed to open Solana URL (no wallet handler?):', error);
-                    // Show user-friendly modal
-                    modal.show({
-                        title: 'Wallet Not Detected',
-                        text: 'Install a Solana wallet like Phantom (phantom.app) to pay. You can still copy the link manually.',
-                        icon: 'warning',
-                        confirmButtonText: 'Got it'
-                    });
-                }
-            }
-
-            // FIX: Enhanced processPayment with QR fallback, RPC retry, and better polling
-            async processPayment() {
-                if (!this.solanaPay) {
-                    throw new Error('Solana Pay not available');
-                }
-                
-                try {
-                    const { solAmount } = await this.fetchSolPrice();
-                    const reference = solanaWeb3.Keypair.generate().publicKey;
-                    const label = 'USDARK AI Agent Creation';
-                    const message = `Payment of ${solAmount} SOL for agent creation fee (75 USD)`;
-
-                    const transferRequestURL = this.solanaPay.createTransfer({
-                        recipient: this.recipientPubkey,
-                        amount: this.bigNumber ? new this.bigNumber(solAmount) : solAmount,
-                        reference,
-                        label,
-                        message
-                    });
-                    
-                    const transferRequestUrl = transferRequestURL.toString();
-
-                    // FIX: Improved QR with global check + fallback
-                    let qrDataUrl = null;
-                    if (window.QRCode) {
-                        try {
-                            qrDataUrl = await new Promise((resolve, reject) => {
-                                window.QRCode.toDataURL(transferRequestUrl, { width: 256 }, (err, url) => {
-                                    if (err) {
-                                        reject(new Error(`QR generation failed: ${err.message}`));
-                                    } else {
-                                        resolve(url);
-                                    }
-                                });
-                            });
-                        } catch (qrErr) {
-                            console.warn('QR generation failed:', qrErr);
-                            qrDataUrl = null;
-                        }
-                    } else {
-                        console.warn('QRCode not available—skipping QR');
-                    }
-
-                    // FIX: Enhanced polling with exponential backoff and RPC retry
-                    const pollForPayment = async () => {
-                        return new Promise((resolve, reject) => {
-                            let delay = 5000; // Start at 5s
-                            const maxAttempts = 12; // 1min+ timeout
-                            let attempts = 0;
-                            
-                            const poll = async () => {
-                                attempts++;
-                                try {
-                                    const signature = await this.solanaPay.findReference(this.connection, reference);
-                                    clearInterval(interval);
-                                    resolve({ paymentSuccess: true, signature });
-                                } catch (err) {
-                                    console.log(`Polling attempt ${attempts} error:`, err.message);
-                                    if (attempts >= maxAttempts) {
-                                        clearInterval(interval);
-                                        reject(new Error('Timeout—use manual verification'));
-                                    } else if (err.message.includes('403') || err.message.includes('rate limit')) {
-                                        // FIX: RPC error—retry after longer delay
-                                        delay *= 2; // Exponential backoff
-                                        console.log(`RPC error, retrying in ${delay/1000}s...`);
-                                    }
-                                }
-                            };
-
-                            const interval = setInterval(poll, delay);
-                            poll(); // Run once immediately
-                        });
-                    };
-
-                    const pollPromise = pollForPayment().catch(async (err) => {
-                        console.error('Polling failed:', err);
-                        // Fallback to manual
-                        const manualSig = await this.promptForSignature(transferRequestUrl, solAmount);
-                        if (manualSig) {
-                            return { paymentSuccess: true, signature: manualSig };
-                        } else {
-                            throw new Error('Payment cancelled or failed');
-                        }
-                    });
-
-                    // Show payment modal (updated HTML for fallback)
-                    const result = await modal.show({
-                        title: 'Solana Pay - Complete Payment',
-                        text: `Pay ${solAmount} SOL (≈ $${this.paymentAmountUSD}) to create your agent. Click "Open Wallet" to pay.`,
-                        icon: 'info',
-                        html: `
-                            <div style="text-align: center; padding: 10px;">
-                                ${qrDataUrl ? `<img src="${qrDataUrl}" alt="QR Code" style="width: 200px; height: 200px; margin: 0 auto 15px; display: block; border-radius: 8px;">` : '<p style="font-size: 13px; color: #f59e0b; margin-bottom: 10px;">QR Code unavailable—use the link below.</p>'}
-                                <p style="font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 10px;">${qrDataUrl ? 'Or ' : ''}Open this in your wallet:</p>
-                                <input type="text" id="paymentUrlInput" value="${transferRequestUrl}" readonly class="modal-input" style="font-size: 12px;">
-                                <button id="openWalletBtn" class="modal-copy-btn" style="margin-top: 10px;">
-                                    <i class="fas fa-wallet"></i> Open Wallet
-                                </button>
-                                <p style="font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 10px;">Waiting for confirmation... (This may take a minute)</p>
-                            </div>
-                        `,
-                        noConfirmButton: true,
-                        showCancelButton: true,
-                        cancelButtonText: 'Cancel',
-                        didOpen: () => {
-                            const openBtn = document.getElementById('openWalletBtn');
-                            if (openBtn) {
-                                const originalText = openBtn.innerHTML;
-                                openBtn.addEventListener('click', () => {
-                                    this.openInWallet(transferRequestUrl); // Now handles errors
-                                    openBtn.innerHTML = '<i class="fas fa-check"></i> Opened in Wallet';
-                                    setTimeout(() => {
-                                        openBtn.innerHTML = originalText;
-                                    }, 2000);
-                                });
-                            }
-                        }
-                    });
-
-                    // Wait for poll or manual
-                    const pollResult = await pollPromise;
-
-                    if (pollResult.paymentSuccess) {
-                        modal.show({
-                            title: 'Payment Confirmed! ✅',
-                            text: 'Transaction verified. Creating your agent...',
-                            icon: 'success',
-                            confirmButtonText: 'OK'
-                        });
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } catch (error) {
-                    console.error('Payment process error:', error);
-                    modal.show({
-                        title: 'Payment Error',
-                        text: error.message || 'Failed to process payment. Please try again.',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
-                    return false;
-                }
-            }
-
-            // FIX: Enhanced promptForSignature with better UX
-            async promptForSignature(url, amount) {
-                return new Promise(async (resolve) => {
-                    const result = await modal.show({
-                        title: 'Enter Transaction Signature',
-                        text: 'Payment completed? Paste the transaction signature to verify.',
-                        icon: 'info',
-                        html: `
-                            <div style="text-align: center; padding: 10px;">
-                                <p style="font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 10px;">Payment link (open first):</p>
-                                <input type="text" id="paymentUrlInputManual" value="${url}" readonly class="modal-input" style="font-size: 12px; margin-bottom: 10px;">
-                                <button id="openWalletBtnManual" class="modal-copy-btn" style="margin-bottom: 10px;">
-                                    <i class="fas fa-wallet"></i> Open Wallet
-                                </button>
-                                <input type="text" id="txSignature" placeholder="Enter transaction signature (e.g., 5Ey...)" class="modal-input">
-                                <button id="verifySigBtn" class="modal-copy-btn" style="background: #3b82f6; color: white; margin-top: 10px;">
-                                    <i class="fas fa-check"></i> Verify Signature
-                                </button>
-                            </div>
-                        `,
-                        showCancelButton: true,
-                        cancelButtonText: 'Cancel',
-                        didOpen: () => {
-                            const openBtn = document.getElementById('openWalletBtnManual');
-                            if (openBtn) {
-                                const originalText = openBtn.innerHTML;
-                                openBtn.addEventListener('click', () => {
-                                    this.openInWallet(url); // Handles scheme errors
-                                    openBtn.innerHTML = '<i class="fas fa-check"></i> Opened!';
-                                    setTimeout(() => {
-                                        openBtn.innerHTML = originalText;
-                                    }, 2000);
-                                });
-                            }
-
-                            const verifyBtn = document.getElementById('verifySigBtn');
-                            const sigInput = document.getElementById('txSignature');
-                            if (verifyBtn && sigInput) {
-                                verifyBtn.addEventListener('click', async () => {
-                                    const sig = sigInput.value.trim();
-                                    if (!sig) {
-                                        alert('Please enter a signature');
-                                        return;
-                                    }
-                                    try {
-                                        modal.showLoading('Verifying...', 'Checking transaction...');
-                                        const verified = await this.verifyTransaction(sig, amount, this.recipientPubkey);
-                                        modal.hideModal(); // Hide loading
-                                        if (verified) {
-                                            modal.show({
-                                                title: 'Verified! ✅',
-                                                text: 'Payment confirmed.',
-                                                icon: 'success',
-                                                confirmButtonText: 'OK'
-                                            });
-                                            resolve({ paymentSuccess: true, signature: sig });
-                                        } else {
-                                            throw new Error('Invalid transaction—amount too low or wrong recipient');
-                                        }
-                                    } catch (err) {
-                                        modal.hideModal(); // Hide loading
-                                        modal.show({
-                                            title: 'Verification Failed',
-                                            text: err.message,
-                                            icon: 'error',
-                                            confirmButtonText: 'OK'
-                                        });
-                                        resolve({ paymentSuccess: false });
-                                    }
-                                });
-                            }
-                        },
-                        didConfirm: () => resolve({ paymentSuccess: false })
-                    });
-                }).then((res) => res?.signature || null);
             }
 
             async uploadLogo(file, agentId) {
@@ -1957,6 +1674,148 @@
                 }
             }
 
+            async processPayment() {
+                if (!this.connection) {
+                    modal.show({
+                        title: 'Connection Error',
+                        text: 'Unable to connect to Solana network. Please check your internet connection and try again.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                    return false;
+                }
+
+                try {
+                    const { solPrice, solAmount } = await this.fetchSolPrice();
+                    
+                    // Show payment confirmation dialog
+                    const confirmResult = await modal.show({
+                        title: 'Payment Required',
+                        text: `To create your AI agent, payment of ${solAmount} SOL ($${this.paymentAmountUSD} USD) is required. Continue?`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Pay with Solana',
+                        cancelButtonText: 'Cancel'
+                    });
+
+                    if (!confirmResult.isConfirmed) {
+                        return false;
+                    }
+
+                    // Generate reference key for payment tracking
+                    const reference = solanaWeb3.Keypair.generate().publicKey;
+                    
+                    // Create payment URL 
+                    const paymentUrl = this.createTransfer(this.recipientPubkey, solAmount, reference);
+                    console.log('Payment URL:', paymentUrl);
+
+                    // Show QR code or open wallet
+                    modal.showLoading('Waiting for Payment...', 'Please complete the payment in your Solana wallet');
+
+                    // Try to open wallet
+                    try {
+                        window.open(paymentUrl, '_blank');
+                    } catch (error) {
+                        console.log('Could not auto-open wallet:', error);
+                    }
+
+                    // Poll for payment confirmation
+                    const paymentReceived = await this.pollForPayment(reference, 300000); // 5 minute timeout
+
+                    if (paymentReceived) {
+                        modal.show({
+                            title: 'Payment Successful!',
+                            text: 'Your payment has been confirmed. Creating your agent now...',
+                            icon: 'success',
+                            confirmButtonText: 'Continue'
+                        });
+                        return true;
+                    } else {
+                        modal.show({
+                            title: 'Payment Timeout',
+                            text: 'Payment was not detected within the time limit. Please try again.',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                        return false;
+                    }
+                } catch (error) {
+                    console.error('Payment processing error:', error);
+                    modal.show({
+                        title: 'Payment Error',
+                        text: `Payment processing failed: ${error.message}`,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                    return false;
+                }
+            }
+
+            createTransfer(recipient, amount, reference) {
+                const label = encodeURIComponent('USDARK AI Agent Creation');
+                const message = encodeURIComponent(`Payment of ${amount} SOL for agent creation fee ($${this.paymentAmountUSD} USD)`);
+                return `solana:${recipient}?amount=${amount}&reference=${reference}&label=${label}&message=${message}`;
+            }
+
+            async pollForPayment(reference, timeout = 300000) {
+                const startTime = Date.now();
+                let attempt = 1;
+                
+                while (Date.now() - startTime < timeout) {
+                    try {
+                        console.log(`Polling attempt ${attempt}`);
+                        
+                        if (!this.connection) {
+                            throw new Error('No connection available');
+                        }
+
+                        const signatures = await this.connection.getSignaturesForAddress(reference, { limit: 1 });
+                        
+                        if (signatures.length > 0) {
+                            console.log('Payment transaction found:', signatures[0]);
+                            return true;
+                        }
+                        
+                        attempt++;
+                        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+                    } catch (error) {
+                        console.log(`Polling attempt ${attempt} error:`, error.message);
+                        
+                        // If RPC fails, try fallback connection
+                        if (error.message.includes('403') || error.message.includes('Forbidden')) {
+                            await this.tryFallbackConnection();
+                        }
+                        
+                        attempt++;
+                        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait longer on error
+                    }
+                }
+                
+                return false; // Timeout
+            }
+
+            async tryFallbackConnection() {
+                const fallbackEndpoints = [
+                    'https://solana-api.projectserum.com',
+                    'https://api.devnet.solana.com' // Use devnet as last resort for testing
+                ];
+                
+                for (const endpoint of fallbackEndpoints) {
+                    try {
+                        console.log(`Trying fallback endpoint: ${endpoint}`);
+                        const testConnection = new solanaWeb3.Connection(endpoint);
+                        await testConnection.getVersion();
+                        this.connection = testConnection;
+                        console.log(`Successfully switched to fallback: ${endpoint}`);
+                        return true;
+                    } catch (error) {
+                        console.log(`Fallback ${endpoint} failed:`, error.message);
+                    }
+                }
+                
+                return false;
+            }
+
             async saveAgentConfig() {
                 console.log('Starting saveAgentConfig');
                 
@@ -1970,12 +1829,6 @@
                         icon: 'warning',
                         confirmButtonText: 'OK'
                     });
-                    return;
-                }
-
-                // Process payment
-                const paymentSuccess = await this.processPayment();
-                if (!paymentSuccess) {
                     return;
                 }
 
@@ -2027,26 +1880,16 @@
                     return;
                 }
 
-                console.log('All validations passed, showing confirmation dialog...');
+                console.log('All validations passed, proceeding with payment...');
 
-                // Confirm creation
-                const confirmResult = await modal.show({
-                    title: 'Confirm Creation',
-                    text: `Create agent "${agentName}" for ${tokenName}?`,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, create it!',
-                    cancelButtonText: 'Cancel'
-                });
-
-                console.log('Confirmation result:', confirmResult);
-
-                if (!confirmResult.isConfirmed) {
-                    console.log('Creation cancelled by user');
+                // Process payment first
+                const paymentSuccess = await this.processPayment();
+                if (!paymentSuccess) {
+                    console.log('Payment failed or cancelled');
                     return;
                 }
 
-                console.log('User confirmed, proceeding with creation...');
+                console.log('Payment successful, proceeding with creation...');
 
                 // Show loading
                 modal.showLoading('Creating Agent...', 'Please wait...');
