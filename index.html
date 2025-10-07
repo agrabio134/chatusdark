@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="shortcut icon" href="./IMG_20251006_184312_498.jpg" type="image/x-icon">
+    <link rel="shortcut icon" href="/logo-main.jpg" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <title>USDARK AI - Unstable Dark Coin Assistant</title>
     <style>
@@ -487,6 +487,7 @@
             margin-bottom: 28px;
             font-size: 24px;
             font-weight: 700;
+            letter-spacing: -0.5px;
         }
 
         .creator-form {
@@ -495,34 +496,97 @@
             gap: 20px;
         }
 
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
         .creator-form label {
             font-weight: 600;
             font-size: 14px;
-            margin-bottom: 8px;
             color: rgba(255,255,255,0.9);
-            display: block;
+            letter-spacing: -0.2px;
         }
 
-        .creator-form input {
+        .creator-form input, .creator-form textarea, .creator-form select {
             padding: 14px 16px;
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px;
             background: rgba(30, 30, 30, 0.8);
             color: white;
             font-size: 15px;
-            font-family: inherit;
-            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s ease;
             width: 100%;
         }
 
-        .creator-form input::placeholder {
+        .creator-form input::placeholder, .creator-form textarea::placeholder {
             color: rgba(255,255,255,0.3);
         }
 
-        .creator-form input:focus {
+        .creator-form input:focus, .creator-form textarea:focus, .creator-form select:focus {
             outline: none;
-            border-color: rgba(255,255,255,0.3);
+            border-color: rgba(28, 194, 154, 0.3);
             background: rgba(30, 30, 30, 1);
+            box-shadow: 0 0 0 3px rgba(28, 194, 154, 0.1);
+        }
+
+        .logo-preview {
+            width: 100%;
+            max-width: 200px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-top: 8px;
+            display: none;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .advanced-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .advanced-toggle label {
+            font-weight: 500;
+            font-size: 14px;
+            color: rgba(255,255,255,0.8);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .advanced-toggle input[type="checkbox"] {
+            width: auto;
+            accent-color: #1cc29a;
+        }
+
+        .advanced-section {
+            display: none;
+            border: 1px solid rgba(28, 194, 154, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            background: rgba(28, 194, 154, 0.05);
+            margin-top: 16px;
+            gap: 16px;
+        }
+
+        .advanced-section.show {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .advanced-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1cc29a;
+            margin-bottom: 12px;
+            text-align: center;
+            letter-spacing: -0.3px;
         }
 
         .save-button {
@@ -535,8 +599,10 @@
             font-weight: 600;
             font-size: 16px;
             margin-top: 8px;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             box-shadow: 0 2px 8px rgba(28, 194, 154, 0.3);
+            font-family: 'Inter', sans-serif;
+            letter-spacing: -0.2px;
         }
 
         .save-button:hover {
@@ -559,11 +625,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
         }
 
         .close-button:hover {
             background: rgba(255,255,255,0.2);
+            transform: scale(1.05);
         }
 
         .custom-modal {
@@ -658,6 +725,7 @@
             text-align: center;
             margin-bottom: 12px;
             color: white;
+            letter-spacing: -0.5px;
         }
 
         .modal-text {
@@ -685,8 +753,8 @@
             font-weight: 600;
             font-size: 15px;
             cursor: pointer;
-            transition: all 0.2s;
-            font-family: inherit;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
         }
 
         .modal-button.primary {
@@ -702,6 +770,7 @@
         .modal-button.secondary {
             background: rgba(255,255,255,0.1);
             color: white;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .modal-button.secondary:hover {
@@ -744,7 +813,7 @@
             cursor: pointer;
             font-weight: 600;
             font-size: 15px;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -882,6 +951,14 @@
             .modal-button {
                 width: 100%;
             }
+
+            .creator-form {
+                gap: 16px;
+            }
+
+            .advanced-section {
+                padding: 16px;
+            }
         }
 
         @media (min-width: 769px) and (max-width: 1024px) {
@@ -894,7 +971,7 @@
 </head>
 <body>
     <div class="preloader" id="preloader">
-        <img src="IMG_20251006_184312_498.jpg" alt="USDARK AI Logo" class="preloader-logo" onerror="this.style.display='none'">
+        <img src="/logo-main.jpg" alt="USDARK AI Logo" class="preloader-logo" id="preloaderLogo" onerror="this.style.display='none'">
         <div class="preloader-text">USDARK AI</div>
         <div class="preloader-subtext">Initializing Assistant...</div>
         <div class="loader-spinner"></div>
@@ -916,7 +993,7 @@
 
     <div class="chat-container" id="chatContainer">
         <div class="chat-header">
-            <img src="IMG_20251006_184312_498.jpg" alt="USDARK AI Logo" class="logo" id="headerLogo" onerror="this.style.display='none'">
+            <img src="/logo-main.jpg" alt="USDARK AI Logo" class="logo" id="headerLogo" onerror="this.style.display='none'">
             <div class="header-info">
                 <div class="header-title">
                     <span class="status-dot"></span>
@@ -955,24 +1032,56 @@
         </button>
         <h2>Create Your Agent</h2>
         <form class="creator-form" id="creatorForm">
-            <div>
+            <div class="form-group">
                 <label for="agentName">Agent Name</label>
                 <input type="text" id="agentName" placeholder="e.g., MYTOKEN AI" required>
             </div>
 
-            <div>
+            <div class="form-group">
                 <label for="tokenName">Token Symbol</label>
                 <input type="text" id="tokenName" placeholder="e.g., $MYTOKEN" required>
             </div>
 
-            <div>
+            <div class="form-group">
                 <label for="ca">Contract Address</label>
                 <input type="text" id="ca" placeholder="Solana contract address" required>
             </div>
 
-            <div>
-                <label for="logoUrl">Logo Image URL (optional)</label>
-                <input type="text" id="logoUrl" placeholder="https://example.com/logo.jpg">
+            <div class="form-group">
+                <label for="logoFile">Logo Image (Upload or URL)</label>
+                <input type="file" id="logoFile" accept="image/*">
+                <input type="text" id="logoUrl" placeholder="Or paste image URL">
+                <img id="logoPreview" class="logo-preview" alt="Preview">
+                <p style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 5px;">Uploads use your Cloudinary account (dhwheswgi). Ensure preset 'ml_default' is set to Unsigned in dashboard for browser uploads.</p>
+            </div>
+
+            <div class="advanced-toggle">
+                <input type="checkbox" id="advancedToggle">
+                <label for="advancedToggle">Advanced Options</label>
+            </div>
+
+            <div class="advanced-section" id="advancedSection">
+                <h3>Customize Your Agent</h3>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <input type="text" id="description" placeholder="e.g., A fun meme token on Solana">
+                </div>
+                <div class="form-group">
+                    <label for="totalSupply">Total Supply</label>
+                    <input type="text" id="totalSupply" placeholder="e.g., 1,000,000,000">
+                </div>
+                <div class="form-group">
+                    <label for="websiteUrl">Website URL</label>
+                    <input type="url" id="websiteUrl" placeholder="e.g., https://mytoken.app">
+                </div>
+                <div class="form-group">
+                    <label for="dexUrl">DEX URL</label>
+                    <input type="url" id="dexUrl" placeholder="e.g., https://dex.usdark.app">
+                </div>
+                <div class="form-group">
+                    <label for="systemPrompt">Custom Behavior/Prompt</label>
+                    <textarea id="systemPrompt" rows="4" placeholder="Custom system prompt for the AI's behavior (e.g., Be sarcastic and fun!)"></textarea>
+                </div>
             </div>
 
             <button type="button" class="save-button" id="saveButton">Create Agent</button>
@@ -1008,6 +1117,10 @@
         const analytics = getAnalytics(app);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        // Cloudinary config - Your details
+        const CLOUDINARY_CLOUD_NAME = 'dhwheswgi';
+        const CLOUDINARY_UPLOAD_PRESET = 'ml_default'; // Edit this preset to Unsigned in dashboard if needed
 
         // Custom Modal System
         class CustomModal {
@@ -1109,6 +1222,7 @@
                 this.conversationHistory = [];
                 this.groqApiKey = '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';
                 this.groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
+                this.defaultLogo = window.location.origin + '/logo-main.jpg';
                 this.defaultConfig = {
                     agentName: 'USDARK AI',
                     tokenName: '$USDARK',
@@ -1121,11 +1235,14 @@
                     xCommunityUrl: 'https://x.com/i/communities/1973064199522627940',
                     xAccountUrl: 'https://x.com/usdark_dex',
                     dexscreenerUrl: 'https://dexscreener.com/solana/4EKDKWJDrqrCQtAD6j9sM5diTeZiKBepkEB8GLP9Dark',
-                    logoUrl: './IMG_20251006_184312_498.jpg',
+                    logoUrl: this.defaultLogo,
                     systemPrompt: 'You are USDARK AI, a helpful AI assistant for USDARK, the first ever unstable dark coin. USDARK ($USDARK) is a high-volatility meme token on Solana with 1,000,000,000 total supply. Contract Address: 4EKDKWJDrqrCQtAD6j9sM5diTeZiKBepkEB8GLP9Dark. Be conversational, helpful, and enthusiastic!',
                     welcomeMessage: 'Hi! I\'m USDARK AI, your assistant for $USDARK, the first ever unstable dark coin. Ask me about tokenomics, contract address, trading on DEX/perp, or anything dark!'
                 };
                 this.agentConfig = {...this.defaultConfig};
+                // Set initial logos (already absolute)
+                document.getElementById('preloaderLogo').src = this.defaultLogo;
+                document.getElementById('headerLogo').src = this.defaultLogo;
                 this.setupAuth();
                 this.loadConfigFromPath();
                 this.setupEventListeners();
@@ -1156,13 +1273,11 @@
                     const provider = new GoogleAuthProvider();
                     signInWithPopup(auth, provider).catch((error) => {
                         console.error('Sign-in error:', error);
-                        Swal.fire({
+                        modal.show({
                             title: 'Sign-In Error',
                             text: 'Failed to sign in with Google. Please try again.',
                             icon: 'error',
-                            background: '#111111',
-                            color: '#e5e5e5',
-                            confirmButtonColor: '#1cc29a'
+                            confirmButtonText: 'OK'
                         });
                     });
                 });
@@ -1210,6 +1325,10 @@
                     const docSnap = await getDoc(docRef);
                     if (docSnap.exists()) {
                         this.agentConfig = docSnap.data();
+                        // Ensure logoUrl is absolute
+                        if (this.agentConfig.logoUrl && !this.agentConfig.logoUrl.startsWith('http')) {
+                            this.agentConfig.logoUrl = window.location.origin + '/' + this.agentConfig.logoUrl;
+                        }
                     } else {
                         this.useDefaultConfig();
                         this.updateStatus('Agent Not Found', 'Loading default USDARK AI.', false);
@@ -1251,8 +1370,10 @@
 
             updateUI() {
                 const { agentName, logoUrl, welcomeMessage } = this.agentConfig;
+                const finalLogoUrl = logoUrl || this.defaultLogo;
                 document.getElementById('headerTitle').textContent = agentName;
-                document.getElementById('headerLogo').src = logoUrl || this.defaultConfig.logoUrl;
+                document.getElementById('headerLogo').src = finalLogoUrl;
+                document.getElementById('preloaderLogo').src = finalLogoUrl;
                 document.getElementById('welcomeMessage').textContent = welcomeMessage;
                 document.title = `${agentName} - AI Assistant`;
             }
@@ -1313,6 +1434,10 @@
                 const messageInput = document.getElementById('messageInput');
                 const sendButton = document.getElementById('sendButton');
                 const creatorButton = document.getElementById('creatorButton');
+                const advancedToggle = document.getElementById('advancedToggle');
+                const logoFile = document.getElementById('logoFile');
+                const logoUrlInput = document.getElementById('logoUrl');
+                const logoPreview = document.getElementById('logoPreview');
 
                 sendButton.addEventListener('click', () => {
                     console.log('Send button clicked');
@@ -1349,6 +1474,63 @@
                     console.log('Save button clicked');
                     this.saveAgentConfig();
                 });
+
+                // Advanced toggle
+                advancedToggle.addEventListener('change', (e) => {
+                    document.getElementById('advancedSection').classList.toggle('show', e.target.checked);
+                });
+
+                // Logo preview
+                logoFile.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                            logoPreview.src = ev.target.result;
+                            logoPreview.style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                        logoUrlInput.value = ''; // Clear URL if file selected
+                    }
+                });
+
+                logoUrlInput.addEventListener('input', (e) => {
+                    if (e.target.value) {
+                        logoPreview.src = e.target.value;
+                        logoPreview.style.display = 'block';
+                        logoFile.value = ''; // Clear file if URL entered
+                    } else {
+                        logoPreview.style.display = 'none';
+                    }
+                });
+            }
+
+            async uploadLogo(file, agentId) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+                try {
+                    const response = await fetch(
+                        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+                        {
+                            method: 'POST',
+                            body: formData
+                        }
+                    );
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Cloudinary response:', response.status, errorText);
+                        throw new Error(`Upload failed: ${response.status} ${response.statusText}. Details: ${errorText}`);
+                    }
+
+                    const data = await response.json();
+                    return data.secure_url;
+                } catch (error) {
+                    console.error('Upload error details:', error);
+                    throw error;
+                }
             }
 
             async saveAgentConfig() {
@@ -1371,9 +1553,37 @@
                 const agentName = document.getElementById('agentName').value.trim();
                 const tokenName = document.getElementById('tokenName').value.trim();
                 const ca = document.getElementById('ca').value.trim();
-                const logoUrl = document.getElementById('logoUrl').value.trim() || './IMG_20251006_184312_498.jpg';
+                const logoFile = document.getElementById('logoFile').files[0];
+                const logoUrlInput = document.getElementById('logoUrl').value.trim();
+                let logoUrl = '';
+                if (logoFile) {
+                    try {
+                        logoUrl = await this.uploadLogo(logoFile, tokenName.toLowerCase().replace(/[$\s]+/g, ''));
+                    } catch (error) {
+                        console.error('Upload error:', error);
+                        modal.show({
+                            title: 'Upload Failed',
+                            text: `Image upload failed: ${error.message}. 
+To fix: Go to Cloudinary Dashboard > Settings > Upload > Upload presets > Edit 'ml_default' > Set Signing Mode to 'Unsigned' > Save. Then try again. Using default logo for now.`,
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                        logoUrl = logoUrlInput || this.defaultLogo;
+                    }
+                } else if (logoUrlInput) {
+                    logoUrl = logoUrlInput;
+                } else {
+                    logoUrl = this.defaultLogo;
+                }
 
-                console.log('Form values:', { agentName, tokenName, ca, logoUrl });
+                const advancedToggle = document.getElementById('advancedToggle').checked;
+                const description = advancedToggle ? document.getElementById('description').value.trim() : `${tokenName} token on Solana`;
+                const totalSupply = advancedToggle ? document.getElementById('totalSupply').value.trim() : '1,000,000,000';
+                const websiteUrl = advancedToggle ? document.getElementById('websiteUrl').value.trim() : '#';
+                const dexUrl = advancedToggle ? document.getElementById('dexUrl').value.trim() : '#';
+                const customPrompt = advancedToggle ? document.getElementById('systemPrompt').value.trim() : '';
+
+                console.log('Form values:', { agentName, tokenName, ca, logoUrl, description, totalSupply, websiteUrl, dexUrl, customPrompt });
 
                 // Validate required fields
                 if (!agentName || !tokenName || !ca) {
@@ -1410,9 +1620,6 @@
 
                 // Show loading
                 modal.showLoading('Creating Agent...', 'Please wait...');
-                console.log('Loading dialog shown');
-
-                console.log('Loading dialog shown');
 
                 // Use token symbol for the URL path
                 const agentId = tokenName.toLowerCase().replace(/[$\s]+/g, '');
@@ -1435,20 +1642,21 @@
                     }
 
                     console.log('Creating new agent configuration...');
+                    const defaultPrompt = `You are ${agentName}, a helpful AI assistant for ${tokenName}, a token on Solana. Contract Address: ${ca}. Be conversational, helpful, enthusiastic, and use emojis when appropriate!`;
+                    const systemPrompt = customPrompt ? defaultPrompt + ' ' + customPrompt : defaultPrompt;
                     const newConfig = {
                         agentName,
                         tokenName,
-                        description: `${tokenName} token on Solana`,
+                        description,
                         ca,
-                        totalSupply: '1,000,000,000',
-                        dexUrl: '#',
-                        perpUrl: '#',
-                        websiteUrl: '#',
+                        totalSupply,
+                        dexUrl,
+                        websiteUrl,
                         xCommunityUrl: '#',
                         xAccountUrl: '#',
                         dexscreenerUrl: `https://dexscreener.com/solana/${ca}`,
                         logoUrl,
-                        systemPrompt: `You are ${agentName}, a helpful AI assistant for ${tokenName}, a token on Solana. Contract Address: ${ca}. Be conversational, helpful, enthusiastic, and use emojis when appropriate!`,
+                        systemPrompt,
                         welcomeMessage: `Hi! I'm ${agentName}, your assistant for ${tokenName}. Ask me about the contract address, trading, or anything else!`,
                         owner: user.uid,
                         createdAt: new Date().toISOString()
@@ -1469,6 +1677,8 @@
                     
                     // Clear the form
                     document.getElementById('creatorForm').reset();
+                    document.getElementById('logoPreview').style.display = 'none';
+                    document.getElementById('advancedSection').classList.remove('show');
                     
                     // Update URL
                     const newUrl = `/agent/${agentId}`;
