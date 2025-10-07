@@ -566,6 +566,210 @@
             background: rgba(255,255,255,0.2);
         }
 
+        .custom-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(17, 17, 17, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            z-index: 10000;
+            max-width: 440px;
+            width: 90%;
+            display: none;
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        .custom-modal.show {
+            display: block;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -48%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        .custom-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: none;
+        }
+
+        .custom-modal-overlay.show {
+            display: block;
+        }
+
+        .modal-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .modal-icon.success {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+        }
+
+        .modal-icon.error {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .modal-icon.warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+        }
+
+        .modal-icon.question {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+        }
+
+        .modal-icon.loading {
+            background: rgba(28, 194, 154, 0.15);
+            color: #1cc29a;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 12px;
+            color: white;
+        }
+
+        .modal-text {
+            font-size: 15px;
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .modal-content {
+            margin-bottom: 24px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .modal-button {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .modal-button.primary {
+            background: #1cc29a;
+            color: #0a0a0a;
+        }
+
+        .modal-button.primary:hover {
+            background: #1ed9ae;
+            transform: translateY(-1px);
+        }
+
+        .modal-button.secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .modal-button.secondary:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .modal-button.danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .modal-button.danger:hover {
+            background: #b91c1c;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #1a1a1a;
+            color: #e5e5e5;
+            border: 1px solid #333;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 15px;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: #1cc29a;
+        }
+
+        .modal-copy-btn {
+            width: 100%;
+            padding: 12px 20px;
+            background: #1cc29a;
+            color: #0a0a0a;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .modal-copy-btn:hover {
+            background: #1ed9ae;
+            transform: translateY(-1px);
+        }
+
+        .modal-copy-btn.copied {
+            background: #10b981;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(28, 194, 154, 0.2);
+            border-top: 3px solid #1cc29a;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 0;
@@ -660,6 +864,23 @@
 
             .preloader-subtext {
                 font-size: 14px;
+            }
+
+            .custom-modal {
+                width: 95%;
+                padding: 24px 20px;
+            }
+
+            .modal-title {
+                font-size: 20px;
+            }
+
+            .modal-buttons {
+                flex-direction: column;
+            }
+
+            .modal-button {
+                width: 100%;
             }
         }
 
@@ -758,6 +979,15 @@
         </form>
     </div>
 
+    <div class="custom-modal-overlay" id="customModalOverlay"></div>
+    <div class="custom-modal" id="customModal">
+        <div class="modal-icon" id="modalIcon"></div>
+        <div class="modal-title" id="modalTitle"></div>
+        <div class="modal-text" id="modalText"></div>
+        <div class="modal-content" id="modalContent"></div>
+        <div class="modal-buttons" id="modalButtons"></div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-analytics.js";
@@ -779,6 +1009,101 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // Custom Modal System
+        class CustomModal {
+            constructor() {
+                this.modal = document.getElementById('customModal');
+                this.overlay = document.getElementById('customModalOverlay');
+                this.icon = document.getElementById('modalIcon');
+                this.title = document.getElementById('modalTitle');
+                this.text = document.getElementById('modalText');
+                this.content = document.getElementById('modalContent');
+                this.buttons = document.getElementById('modalButtons');
+                
+                this.overlay.addEventListener('click', () => this.close());
+            }
+
+            show(options) {
+                return new Promise((resolve) => {
+                    // Set icon
+                    this.icon.className = `modal-icon ${options.icon || ''}`;
+                    this.icon.innerHTML = this.getIconHtml(options.icon);
+                    
+                    // Set title and text
+                    this.title.textContent = options.title || '';
+                    this.text.textContent = options.text || '';
+                    
+                    // Set custom content
+                    this.content.innerHTML = options.html || '';
+                    
+                    // Set buttons
+                    this.buttons.innerHTML = '';
+                    
+                    if (options.showCancelButton) {
+                        const cancelBtn = document.createElement('button');
+                        cancelBtn.className = 'modal-button secondary';
+                        cancelBtn.textContent = options.cancelButtonText || 'Cancel';
+                        cancelBtn.onclick = () => {
+                            this.close();
+                            resolve({ isConfirmed: false });
+                        };
+                        this.buttons.appendChild(cancelBtn);
+                    }
+                    
+                    if (!options.showLoading) {
+                        const confirmBtn = document.createElement('button');
+                        confirmBtn.className = `modal-button ${options.confirmButtonClass || 'primary'}`;
+                        confirmBtn.textContent = options.confirmButtonText || 'OK';
+                        confirmBtn.onclick = () => {
+                            if (options.didConfirm) {
+                                options.didConfirm();
+                            }
+                            this.close();
+                            resolve({ isConfirmed: true });
+                        };
+                        this.buttons.appendChild(confirmBtn);
+                    }
+                    
+                    // Show modal
+                    this.overlay.classList.add('show');
+                    this.modal.classList.add('show');
+                    
+                    // Call didOpen callback
+                    if (options.didOpen) {
+                        setTimeout(() => options.didOpen(), 100);
+                    }
+                });
+            }
+
+            showLoading(title = 'Loading...', text = 'Please wait...') {
+                this.show({
+                    title,
+                    text,
+                    icon: 'loading',
+                    showLoading: true,
+                    html: '<div class="spinner"></div>'
+                });
+            }
+
+            close() {
+                this.overlay.classList.remove('show');
+                this.modal.classList.remove('show');
+            }
+
+            getIconHtml(type) {
+                const icons = {
+                    success: '<i class="fas fa-check"></i>',
+                    error: '<i class="fas fa-times"></i>',
+                    warning: '<i class="fas fa-exclamation"></i>',
+                    question: '<i class="fas fa-question"></i>',
+                    loading: '<i class="fas fa-spinner fa-spin"></i>'
+                };
+                return icons[type] || '';
+            }
+        }
+
+        const modal = new CustomModal();
+
         class USDARKAIChatbot {
             constructor() {
                 this.conversationHistory = [];
@@ -796,7 +1121,7 @@
                     xCommunityUrl: 'https://x.com/i/communities/1973064199522627940',
                     xAccountUrl: 'https://x.com/usdark_dex',
                     dexscreenerUrl: 'https://dexscreener.com/solana/4EKDKWJDrqrCQtAD6j9sM5diTeZiKBepkEB8GLP9Dark',
-                    logoUrl: './logo.jpg',
+                    logoUrl: './IMG_20251006_184312_498.jpg',
                     systemPrompt: 'You are USDARK AI, a helpful AI assistant for USDARK, the first ever unstable dark coin. USDARK ($USDARK) is a high-volatility meme token on Solana with 1,000,000,000 total supply. Contract Address: 4EKDKWJDrqrCQtAD6j9sM5diTeZiKBepkEB8GLP9Dark. Be conversational, helpful, and enthusiastic!',
                     welcomeMessage: 'Hi! I\'m USDARK AI, your assistant for $USDARK, the first ever unstable dark coin. Ask me about tokenomics, contract address, trading on DEX/perp, or anything dark!'
                 };
@@ -827,14 +1152,23 @@
                 });
 
                 document.getElementById('signInButton').addEventListener('click', () => {
+                    console.log('Sign in button clicked');
                     const provider = new GoogleAuthProvider();
                     signInWithPopup(auth, provider).catch((error) => {
                         console.error('Sign-in error:', error);
-                        this.updateStatus('Sign-In Error', 'Failed to sign in with Google.', false);
+                        Swal.fire({
+                            title: 'Sign-In Error',
+                            text: 'Failed to sign in with Google. Please try again.',
+                            icon: 'error',
+                            background: '#111111',
+                            color: '#e5e5e5',
+                            confirmButtonColor: '#1cc29a'
+                        });
                     });
                 });
 
                 document.getElementById('signOutButton').addEventListener('click', () => {
+                    console.log('Sign out button clicked');
                     signOut(auth).then(() => {
                         this.closeAuthModal();
                     }).catch((error) => {
@@ -843,10 +1177,12 @@
                 });
 
                 document.getElementById('authCloseButton').addEventListener('click', () => {
+                    console.log('Auth close button clicked');
                     this.closeAuthModal();
                 });
 
                 document.getElementById('authOverlay').addEventListener('click', () => {
+                    console.log('Auth overlay clicked');
                     this.closeAuthModal();
                 });
             }
@@ -890,21 +1226,25 @@
             }
 
             closeAuthModal() {
+                console.log('Closing auth modal');
                 document.getElementById('authContainer').style.display = 'none';
                 document.getElementById('authOverlay').style.display = 'none';
             }
 
             openAuthModal() {
+                console.log('Opening auth modal');
                 document.getElementById('authContainer').style.display = 'block';
                 document.getElementById('authOverlay').style.display = 'block';
             }
 
             closeCreatorModal() {
+                console.log('Closing creator modal');
                 document.getElementById('creatorContainer').style.display = 'none';
                 document.getElementById('creatorOverlay').style.display = 'none';
             }
 
             openCreatorModal() {
+                console.log('Opening creator modal');
                 document.getElementById('creatorContainer').style.display = 'block';
                 document.getElementById('creatorOverlay').style.display = 'block';
             }
@@ -974,15 +1314,20 @@
                 const sendButton = document.getElementById('sendButton');
                 const creatorButton = document.getElementById('creatorButton');
 
-                sendButton.addEventListener('click', () => this.sendMessage());
+                sendButton.addEventListener('click', () => {
+                    console.log('Send button clicked');
+                    this.sendMessage();
+                });
                 messageInput.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
+                        console.log('Enter key pressed in message input');
                         this.sendMessage();
                     }
                 });
 
                 creatorButton.addEventListener('click', () => {
+                    console.log('Create Agent button clicked');
                     if (auth.currentUser) {
                         this.openCreatorModal();
                     } else {
@@ -991,43 +1336,105 @@
                 });
 
                 document.getElementById('creatorCloseButton').addEventListener('click', () => {
+                    console.log('Creator close button clicked');
                     this.closeCreatorModal();
                 });
 
                 document.getElementById('creatorOverlay').addEventListener('click', () => {
+                    console.log('Creator overlay clicked');
                     this.closeCreatorModal();
                 });
 
-                document.getElementById('saveButton').addEventListener('click', () => this.saveAgentConfig());
+                document.getElementById('saveButton').addEventListener('click', () => {
+                    console.log('Save button clicked');
+                    this.saveAgentConfig();
+                });
             }
 
             async saveAgentConfig() {
+                console.log('Starting saveAgentConfig');
+                
+                // Check if user is signed in
                 const user = auth.currentUser;
                 if (!user) {
-                    this.updateStatus('Error', 'You must be signed in to save an agent.', false);
+                    console.log('No user signed in');
+                    modal.show({
+                        title: 'Authentication Required',
+                        text: 'You must be signed in to create an agent.',
+                        icon: 'warning',
+                        confirmButtonText: 'OK'
+                    });
                     return;
                 }
 
+                // Get form values
                 const agentName = document.getElementById('agentName').value.trim();
                 const tokenName = document.getElementById('tokenName').value.trim();
                 const ca = document.getElementById('ca').value.trim();
-                const logoUrl = document.getElementById('logoUrl').value.trim() || './logo.jpg';
+                const logoUrl = document.getElementById('logoUrl').value.trim() || './IMG_20251006_184312_498.jpg';
 
+                console.log('Form values:', { agentName, tokenName, ca, logoUrl });
+
+                // Validate required fields
                 if (!agentName || !tokenName || !ca) {
-                    this.updateStatus('Error', 'Please fill in all required fields.', false);
+                    console.log('Missing required fields');
+                    modal.show({
+                        title: 'Missing Information',
+                        text: 'Please fill in Agent Name, Token Symbol, and Contract Address.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
                     return;
                 }
 
-                const agentId = agentName.toLowerCase().replace(/\s+/g, '-');
+                console.log('All validations passed, showing confirmation dialog...');
+
+                // Confirm creation
+                const confirmResult = await modal.show({
+                    title: 'Confirm Creation',
+                    text: `Create agent "${agentName}" for ${tokenName}?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, create it!',
+                    cancelButtonText: 'Cancel'
+                });
+
+                console.log('Confirmation result:', confirmResult);
+
+                if (!confirmResult.isConfirmed) {
+                    console.log('Creation cancelled by user');
+                    return;
+                }
+
+                console.log('User confirmed, proceeding with creation...');
+
+                // Show loading
+                modal.showLoading('Creating Agent...', 'Please wait...');
+                console.log('Loading dialog shown');
+
+                console.log('Loading dialog shown');
+
+                // Use token symbol for the URL path
+                const agentId = tokenName.toLowerCase().replace(/[$\s]+/g, '');
+                console.log('Generated agentId:', agentId);
 
                 try {
+                    console.log('Checking if agent already exists...');
                     const docRef = doc(db, 'agents', agentId);
                     const docSnap = await getDoc(docRef);
+                    
                     if (docSnap.exists()) {
-                        this.updateStatus('Error', 'Agent name already taken. Choose another.', false);
+                        console.log('Token symbol already taken');
+                        modal.show({
+                            title: 'Token Already Exists',
+                            text: `An agent for ${tokenName} already exists. Please use a different token symbol.`,
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
                         return;
                     }
 
+                    console.log('Creating new agent configuration...');
                     const newConfig = {
                         agentName,
                         tokenName,
@@ -1043,22 +1450,76 @@
                         logoUrl,
                         systemPrompt: `You are ${agentName}, a helpful AI assistant for ${tokenName}, a token on Solana. Contract Address: ${ca}. Be conversational, helpful, enthusiastic, and use emojis when appropriate!`,
                         welcomeMessage: `Hi! I'm ${agentName}, your assistant for ${tokenName}. Ask me about the contract address, trading, or anything else!`,
-                        owner: user.uid
+                        owner: user.uid,
+                        createdAt: new Date().toISOString()
                     };
 
+                    console.log('Saving to Firestore...');
                     await setDoc(docRef, newConfig);
+                    console.log('Successfully saved to Firestore!');
+                    
+                    // Update local state
                     this.agentConfig = newConfig;
                     this.updateUI();
-                    this.updateStatus('Success', 'Agent created successfully!', true);
                     this.closeCreatorModal();
                     this.conversationHistory = [];
                     document.getElementById('chatMessages').innerHTML = `
                         <div class="welcome-message" id="welcomeMessage">${newConfig.welcomeMessage}</div>
                     `;
-                    window.history.pushState(null, '', `/agent/${agentId}`);
+                    
+                    // Clear the form
+                    document.getElementById('creatorForm').reset();
+                    
+                    // Update URL
+                    const newUrl = `/agent/${agentId}`;
+                    window.history.pushState(null, '', newUrl);
+                    console.log('Agent saved and URL updated to:', newUrl);
+
+                    // Show success message
+                    const link = window.location.origin + newUrl;
+                    
+                    modal.show({
+                        title: 'Agent Created! 🎉',
+                        text: `Your agent ${agentName} is now live!`,
+                        icon: 'success',
+                        html: `
+                            <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin: 15px 0 10px;">Share this link:</p>
+                            <input type="text" id="agentLink" value="${link}" readonly class="modal-input" onclick="this.select()">
+                            <button id="copyLinkBtn" class="modal-copy-btn">
+                                <i class="fas fa-copy"></i> <span>Copy Link</span>
+                            </button>
+                        `,
+                        confirmButtonText: 'Got it!',
+                        didOpen: () => {
+                            const copyBtn = document.getElementById('copyLinkBtn');
+                            const linkInput = document.getElementById('agentLink');
+                            
+                            if (copyBtn && linkInput) {
+                                copyBtn.addEventListener('click', () => {
+                                    linkInput.select();
+                                    navigator.clipboard.writeText(link).then(() => {
+                                        copyBtn.classList.add('copied');
+                                        copyBtn.innerHTML = '<i class="fas fa-check"></i> <span>Copied!</span>';
+                                        setTimeout(() => {
+                                            copyBtn.classList.remove('copied');
+                                            copyBtn.innerHTML = '<i class="fas fa-copy"></i> <span>Copy Link</span>';
+                                        }, 2000);
+                                    }).catch(err => {
+                                        console.error('Failed to copy:', err);
+                                    });
+                                });
+                            }
+                        }
+                    });
+
                 } catch (error) {
                     console.error('Error saving agent config:', error);
-                    this.updateStatus('Error', 'Failed to save agent configuration.', false);
+                    modal.show({
+                        title: 'Creation Failed',
+                        text: `Error: ${error.message}`,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
                 }
             }
 
@@ -1250,6 +1711,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM content loaded, initializing chatbot');
             new USDARKAIChatbot();
         });
     </script>
