@@ -784,7 +784,7 @@
                 this.conversationHistory = [];
                 this.groqApiKey = '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';
                 this.groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
-                this.agentConfig = {
+                this.defaultConfig = {
                     agentName: 'USDARK AI',
                     tokenName: '$USDARK',
                     description: 'unstable dark coin, u buy it before u go to sleep and don\'t know if\'ll be millionaire or hobo by the time u wake up. high Volatility!!! made for unstable people. Get dark or die trying.',
@@ -800,7 +800,9 @@
                     systemPrompt: 'You are USDARK AI, a helpful AI assistant for USDARK, the first ever unstable dark coin. USDARK ($USDARK) is a high-volatility meme token on Solana with 1,000,000,000 total supply. Contract Address: 4EKDKWJDrqrCQtAD6j9sM5diTeZiKBepkEB8GLP9Dark. Be conversational, helpful, and enthusiastic!',
                     welcomeMessage: 'Hi! I\'m USDARK AI, your assistant for $USDARK, the first ever unstable dark coin. Ask me about tokenomics, contract address, trading on DEX/perp, or anything dark!'
                 };
+                this.agentConfig = {...this.defaultConfig};
                 this.setupAuth();
+                this.loadConfigFromPath();
                 this.setupEventListeners();
                 this.testConnection();
             }
@@ -815,12 +817,12 @@
                         authStatus.textContent = `Welcome, ${user.displayName}!`;
                         signInButton.style.display = 'none';
                         signOutButton.style.display = 'inline-flex';
-                        this.loadAgentConfig(user.uid);
+                        this.currentUser = user;
                     } else {
                         authStatus.textContent = 'Sign in to create your own AI agent';
                         signInButton.style.display = 'inline-flex';
                         signOutButton.style.display = 'none';
-                        this.resetToDefault();
+                        this.currentUser = null;
                     }
                 });
 
@@ -849,6 +851,44 @@
                 });
             }
 
+            async loadConfigFromPath() {
+                let path = window.location.pathname.toLowerCase();
+                if (path === '/' || path === '') {
+                    this.useDefaultConfig();
+                } else if (path.startsWith('/agent/')) {
+                    let agentId = path.slice('/agent/'.length).replace(/\/$/, '');
+                    if (agentId) {
+                        await this.loadAgentById(agentId);
+                    } else {
+                        this.useDefaultConfig();
+                    }
+                } else {
+                    this.useDefaultConfig();
+                }
+                this.updateUI();
+            }
+
+            async loadAgentById(agentId) {
+                try {
+                    const docRef = doc(db, 'agents', agentId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        this.agentConfig = docSnap.data();
+                    } else {
+                        this.useDefaultConfig();
+                        this.updateStatus('Agent Not Found', 'Loading default USDARK AI.', false);
+                    }
+                } catch (error) {
+                    console.error('Error loading agent:', error);
+                    this.useDefaultConfig();
+                    this.updateStatus('Error', 'Failed to load agent.', false);
+                }
+            }
+
+            useDefaultConfig() {
+                this.agentConfig = {...this.defaultConfig};
+            }
+
             closeAuthModal() {
                 document.getElementById('authContainer').style.display = 'none';
                 document.getElementById('authOverlay').style.display = 'none';
@@ -867,35 +907,14 @@
             openCreatorModal() {
                 document.getElementById('creatorContainer').style.display = 'block';
                 document.getElementById('creatorOverlay').style.display = 'block';
-                this.populateCreatorForm();
-            }
-
-            async loadAgentConfig(userId) {
-                try {
-                    const docRef = doc(db, 'agents', userId);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        this.agentConfig = docSnap.data();
-                        this.updateUI();
-                    } else {
-                        this.updateUI();
-                    }
-                } catch (error) {
-                    console.error('Error loading agent config:', error);
-                    this.updateStatus('Error', 'Failed to load agent configuration.', false);
-                }
             }
 
             updateUI() {
                 const { agentName, logoUrl, welcomeMessage } = this.agentConfig;
                 document.getElementById('headerTitle').textContent = agentName;
-                document.getElementById('headerLogo').src = logoUrl;
+                document.getElementById('headerLogo').src = logoUrl || this.defaultConfig.logoUrl;
                 document.getElementById('welcomeMessage').textContent = welcomeMessage;
                 document.title = `${agentName} - AI Assistant`;
-            }
-
-            resetToDefault() {
-                this.updateUI();
             }
 
             async testConnection() {
@@ -982,14 +1001,6 @@
                 document.getElementById('saveButton').addEventListener('click', () => this.saveAgentConfig());
             }
 
-            populateCreatorForm() {
-                const { agentName, tokenName, ca, logoUrl } = this.agentConfig;
-                document.getElementById('agentName').value = agentName;
-                document.getElementById('tokenName').value = tokenName;
-                document.getElementById('ca').value = ca;
-                document.getElementById('logoUrl').value = logoUrl;
-            }
-
             async saveAgentConfig() {
                 const user = auth.currentUser;
                 if (!user) {
@@ -1007,25 +1018,35 @@
                     return;
                 }
 
-                const newConfig = {
-                    agentName,
-                    tokenName,
-                    description: `${tokenName} token on Solana`,
-                    ca,
-                    totalSupply: '1,000,000,000',
-                    dexUrl: '#',
-                    perpUrl: '#',
-                    websiteUrl: '#',
-                    xCommunityUrl: '#',
-                    xAccountUrl: '#',
-                    dexscreenerUrl: `https://dexscreener.com/solana/${ca}`,
-                    logoUrl,
-                    systemPrompt: `You are ${agentName}, a helpful AI assistant for ${tokenName}, a token on Solana. Contract Address: ${ca}. Be conversational, helpful, enthusiastic, and use emojis when appropriate!`,
-                    welcomeMessage: `Hi! I'm ${agentName}, your assistant for ${tokenName}. Ask me about the contract address, trading, or anything else!`
-                };
+                const agentId = agentName.toLowerCase().replace(/\s+/g, '-');
 
                 try {
-                    await setDoc(doc(db, 'agents', user.uid), newConfig);
+                    const docRef = doc(db, 'agents', agentId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        this.updateStatus('Error', 'Agent name already taken. Choose another.', false);
+                        return;
+                    }
+
+                    const newConfig = {
+                        agentName,
+                        tokenName,
+                        description: `${tokenName} token on Solana`,
+                        ca,
+                        totalSupply: '1,000,000,000',
+                        dexUrl: '#',
+                        perpUrl: '#',
+                        websiteUrl: '#',
+                        xCommunityUrl: '#',
+                        xAccountUrl: '#',
+                        dexscreenerUrl: `https://dexscreener.com/solana/${ca}`,
+                        logoUrl,
+                        systemPrompt: `You are ${agentName}, a helpful AI assistant for ${tokenName}, a token on Solana. Contract Address: ${ca}. Be conversational, helpful, enthusiastic, and use emojis when appropriate!`,
+                        welcomeMessage: `Hi! I'm ${agentName}, your assistant for ${tokenName}. Ask me about the contract address, trading, or anything else!`,
+                        owner: user.uid
+                    };
+
+                    await setDoc(docRef, newConfig);
                     this.agentConfig = newConfig;
                     this.updateUI();
                     this.updateStatus('Success', 'Agent created successfully!', true);
@@ -1034,6 +1055,7 @@
                     document.getElementById('chatMessages').innerHTML = `
                         <div class="welcome-message" id="welcomeMessage">${newConfig.welcomeMessage}</div>
                     `;
+                    window.history.pushState(null, '', `/agent/${agentId}`);
                 } catch (error) {
                     console.error('Error saving agent config:', error);
                     this.updateStatus('Error', 'Failed to save agent configuration.', false);
