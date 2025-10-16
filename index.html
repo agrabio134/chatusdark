@@ -20,7 +20,7 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Orbitron', monospace;
             background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
             min-height: 100vh;
             display: flex;
@@ -522,7 +522,7 @@
             background: rgba(30, 30, 30, 0.8);
             color: white;
             font-size: 15px;
-            font-family: 'Inter', sans-serif;
+            font-family: inherit;
             transition: all 0.2s ease;
             width: 100%;
         }
@@ -607,7 +607,7 @@
             margin-top: 8px;
             transition: all 0.2s ease;
             box-shadow: 0 2px 8px rgba(28, 194, 154, 0.3);
-            font-family: 'Inter', sans-serif;
+            font-family: inherit;
             letter-spacing: -0.2px;
         }
 
@@ -765,7 +765,7 @@
             font-size: 15px;
             cursor: pointer;
             transition: all 0.2s ease;
-            font-family: 'Inter', sans-serif;
+            font-family: inherit;
         }
 
         .modal-button.primary {
@@ -1332,10 +1332,15 @@
                         // Try multiple RPC endpoints for better reliability
                         const endpoints = [
                             'https://api.mainnet-beta.solana.com',
-                            'https://solana-api.projectserum.com',
-                            'https://rpc.ankr.com/solana',
+                            'https://solana-rpc.publicnode.com',
+                            'https://solana.drpc.org',
+                            'https://solana.lavenderfive.com/',
+                            'https://solana.api.onfinality.io/public',
+                            'https://public.rpc.solanavibestation.com/',
+                            'https://solana.therpc.io',
+                            'https://solana-mainnet.rpc.extrnode.com',
                             'https://solana.public-rpc.com',
-                            'https://api.devnet.solana.com' // Fallback to devnet for testing
+                            'https://rpc.ankr.com/solana'
                         ];
                         
                         for (const endpoint of endpoints) {
